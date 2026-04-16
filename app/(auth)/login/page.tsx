@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/common/Button";
 import { useEscapeKey } from "../../../src/hooks/useEscapeKey";
@@ -8,7 +8,7 @@ import Header from "@/components/common/Header";
 import { useToastContext } from "@/components/common/ToastProvider";
 import { useAuth as useAuthContext } from "@/contexts/AuthContext";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect");
   const [email, setEmail] = useState("");
@@ -316,5 +316,25 @@ export default function LoginPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-white">
+          <Header />
+          <div className="min-h-full flex items-center justify-center px-4 py-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary border-t-transparent mx-auto mb-4"></div>
+              <p className="text-gray-600">로그인 페이지를 불러오는 중입니다.</p>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }

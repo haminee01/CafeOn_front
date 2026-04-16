@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { Suspense, useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Cafe } from "@/types/cafe";
 import SearchBar from "@/components/common/SearchBar";
@@ -22,7 +22,7 @@ const getItemsPerPage = () => {
   return 2; // 기본: 2x1 그리드
 };
 
-export default function SearchResultsPage() {
+function SearchResultsPageContent() {
   const searchParams = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -205,5 +205,22 @@ export default function SearchResultsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SearchResultsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-4 border-[#6E4213] border-t-transparent mx-auto mb-4"></div>
+            <p className="text-gray-600">검색 결과를 불러오는 중입니다.</p>
+          </div>
+        </div>
+      }
+    >
+      <SearchResultsPageContent />
+    </Suspense>
   );
 }

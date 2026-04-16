@@ -8,7 +8,7 @@ import React, {
   useMemo,
 } from "react";
 import ChatMessageInput from "@/components/chat/ChatMessageInput";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import ChatMessageList from "@/components/chat/ChatMessageList";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import { useDmChat } from "@/hooks/useDmChat";
@@ -108,23 +108,15 @@ const ChatRoomList: React.FC<{
   );
 };
 
-// 4. 메인 컴포넌트
-interface ChatDetailIntegratedProps {
-  params: {
-    roomId: string;
-  };
-}
-
 /**
  * URL: /mypage/chats/[roomId]
  * 역할: 채팅 목록과 상세 화면을 나란히 보여줍니다.
  */
-const ChatDetailIntegratedPage: React.FC<ChatDetailIntegratedProps> = ({
-  params,
-}) => {
+const ChatDetailIntegratedPage: React.FC = () => {
   const router = useRouter();
+  const params = useParams<{ roomId: string }>();
   // 1. URL의 roomId를 초기 상태로 사용
-  const initialChatId = params.roomId;
+  const initialChatId = params?.roomId ?? "";
 
   // 2. 현재 활성화된 채팅방 ID 상태 관리
   const [activeChatId, setActiveChatId] = useState(initialChatId);

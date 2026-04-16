@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function CallbackPage() {
+function CallbackPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -127,5 +127,29 @@ export default function CallbackPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function CallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <div className="max-w-md w-full text-center px-4">
+            <div className="mb-8">
+              <div className="animate-spin rounded-full h-20 w-20 border-4 border-primary border-t-transparent mx-auto"></div>
+            </div>
+            <h1 className="text-3xl font-bold text-primary mb-4">CafeOn.</h1>
+            <p className="text-lg text-gray-600 leading-relaxed">
+              로그인 처리 중입니다.
+              <br />
+              잠시만 기다려주세요.
+            </p>
+          </div>
+        </div>
+      }
+    >
+      <CallbackPageContent />
+    </Suspense>
   );
 }

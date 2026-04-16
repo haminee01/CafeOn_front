@@ -367,7 +367,7 @@ export async function createReview(
     content: string;
     rating: number;
     images?: File[];
-  }
+  },
 ) {
   try {
     const formData = new FormData();
@@ -378,7 +378,7 @@ export async function createReview(
       JSON.stringify({
         content: reviewData.content,
         rating: reviewData.rating,
-      })
+      }),
     );
 
     // 이미지 파일들 추가
@@ -395,7 +395,7 @@ export async function createReview(
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      }
+      },
     );
     return response.data;
   } catch (error) {
@@ -412,7 +412,7 @@ export async function updateReview(
     content: string;
     rating: number;
     images?: File[];
-  }
+  },
 ) {
   try {
     const formData = new FormData();
@@ -423,7 +423,7 @@ export async function updateReview(
       JSON.stringify({
         content: reviewData.content,
         rating: reviewData.rating,
-      })
+      }),
     );
 
     // 이미지 파일들 추가
@@ -462,7 +462,7 @@ export async function deleteReview(reviewId: string) {
 export async function checkReviewReportStatus(reviewId: string) {
   try {
     const response = await apiClient.get(
-      `/api/reviews/${reviewId}/reports/status`
+      `/api/reviews/${reviewId}/reports/status`,
     );
     return response.data;
   } catch (error) {
@@ -534,7 +534,7 @@ export async function getWishlistCategories(cafeId: string) {
 export async function toggleWishlist(cafeId: string, category: string) {
   try {
     const response = await apiClient.post(
-      `/api/my/wishlist/${cafeId}?category=${category}`
+      `/api/my/wishlist/${cafeId}?category=${category}`,
     );
     return response.data;
   } catch (error) {
@@ -567,7 +567,7 @@ export async function getAdminMembers(params?: {
     }
 
     throw new Error(
-      message || `회원 목록 조회 실패 (${statusCode || "unknown"})`
+      message || `회원 목록 조회 실패 (${statusCode || "unknown"})`,
     );
   }
 }
@@ -590,12 +590,12 @@ export async function addAdminPenalty(
   data: {
     reason: string;
     reasonCode?: string;
-  }
+  },
 ) {
   try {
     const response = await apiClient.post(
       `/api/admin/users/${userId}/penalty`,
-      data
+      data,
     );
     return response.data;
   } catch (error) {
@@ -612,12 +612,12 @@ export async function suspendAdminUser(
     duration: string;
     reason: string;
     reasonCode?: string;
-  }
+  },
 ) {
   try {
     const response = await apiClient.post(
       `/api/admin/users/${userId}/suspend`,
-      data
+      data,
     );
     return response.data;
   } catch (error) {
@@ -631,7 +631,7 @@ export async function suspendAdminUser(
 export async function getUserPenalties(userId: string) {
   try {
     const response = await apiClient.get(
-      `/api/admin/users/${userId}/penalties`
+      `/api/admin/users/${userId}/penalties`,
     );
     return response.data;
   } catch (error) {
@@ -719,7 +719,7 @@ export async function updateProfileImage(file: File) {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      }
+      },
     );
     return response.data;
   } catch (error) {
@@ -750,7 +750,7 @@ export async function changePassword(passwordData: {
   try {
     const response = await apiClient.put(
       "/api/users/me/password",
-      passwordData
+      passwordData,
     );
     return response.data;
   } catch (error) {
@@ -791,7 +791,7 @@ export async function getAdminInquiries(params?: {
     }
 
     throw new Error(
-      message || `문의 목록 조회 실패 (${statusCode || "unknown"})`
+      message || `문의 목록 조회 실패 (${statusCode || "unknown"})`,
     );
   }
 }
@@ -812,7 +812,7 @@ export async function getAdminInquiryDetail(id: number) {
 export async function getAdminInquiryAnswers(inquiryId: number) {
   try {
     const response = await apiClient.get(
-      `/api/admin/inquiries/${inquiryId}/answers`
+      `/api/admin/inquiries/${inquiryId}/answers`,
     );
     return response.data;
   } catch (error) {
@@ -825,12 +825,12 @@ export async function getAdminInquiryAnswers(inquiryId: number) {
 // 관리자 답변 작성
 export async function createAdminInquiryAnswer(
   inquiryId: number,
-  content: string
+  content: string,
 ) {
   try {
     const response = await apiClient.post(
       `/api/admin/inquiries/${inquiryId}/answers`,
-      { content }
+      { content },
     );
     return response.data;
   } catch (error) {
@@ -891,7 +891,7 @@ export async function markChatAsRead(roomId: string, lastReadChatId: string) {
       `/api/chat/rooms/${roomId}/members/me/read-latest`,
       {
         lastReadChatId: lastReadChatId,
-      }
+      },
     );
     return response.data;
   } catch (error) {
@@ -955,7 +955,7 @@ export interface SendChatImageResponse {
 export async function sendChatImage(
   roomId: string | number,
   files: File[],
-  caption?: string
+  caption?: string,
 ): Promise<SendChatImageResponse> {
   try {
     if (!files || files.length === 0) {
@@ -982,7 +982,7 @@ export async function sendChatImage(
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      }
+      },
     );
     return response.data;
   } catch (error) {

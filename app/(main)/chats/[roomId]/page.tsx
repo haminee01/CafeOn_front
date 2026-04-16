@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import {
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { Client, IMessage } from "@stomp/stompjs";
 import {
@@ -16,7 +23,7 @@ import ChatMessageInput from "@/components/chat/ChatMessageInput";
 import { ChatMessage } from "@/types/chat";
 import { getAccessToken } from "@/stores/authStore";
 
-export default function ChatPage() {
+function ChatPageContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -383,5 +390,22 @@ export default function ChatPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-4 border-[#6E4213] border-t-transparent mx-auto mb-4"></div>
+            <p className="text-gray-600">채팅 화면을 불러오는 중입니다.</p>
+          </div>
+        </div>
+      }
+    >
+      <ChatPageContent />
+    </Suspense>
   );
 }
