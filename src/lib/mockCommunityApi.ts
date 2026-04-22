@@ -164,6 +164,91 @@ export const createDemoComment = (postId: number, arg: { content: string; parent
   };
   comments[postId] = [next, ...list];
   write(DEMO_COMMENTS_KEY, comments);
+  // 댓글 수 동기화
+  write(
+    DEMO_POSTS_KEY,
+    getPosts().map((p) => (p.id === postId ? { ...p, comments: (p.comments || 0) + 1 } : p))
+  );
   return { id, message: "댓글이 작성되었습니다." };
+};
+
+export const toggleDemoPostLike = (postId: number) => {
+  const posts = getPosts();
+  const target = posts.find((p) => p.id === postId);
+  if (!target) throw new Error("게시글을 찾을 수 없습니다.");
+
+  const nextLiked = !Boolean(target.likedByMe);
+  const nextLikes = Math.max((target.likes || 0) + (nextLiked ? 1 : -1), 0);
+
+  write(
+    DEMO_POSTS_KEY,
+    posts.map((p) =>
+      p.id === postId ? { ...p, likedByMe: nextLiked, likes: nextLikes, updated_at: nowIso() } : p
+    )
+  );
+
+  return {
+    message: "좋아요가 반영되었습니다.",
+    data: {
+      postId,
+      liked: nextLiked,
+      likes: nextLikes,
+    },
+  };
+};
+
+const updateCommentLikeRecursive = (comments: Comment[], commentId: number): { updated: Comment[]; result?: { liked: boolean; likes: number } } => {
+  let foundResult: { liked: boolean; likes: number } | undefined;
+
+  const updated = comments.map((comment) => {
+    if (comment.id === commentId) {
+      const nextLiked = !Boolean(comment.likedByMe);
+      const nextLikes = Math.max((comment.likes || 0) + (nextLiked ? 1 : -1), 0);
+      foundResult = { liked: nextLiked, likes: nextLikes };
+      return {
+        ...comment,
+        likedByMe: nextLiked,
+        likes: nextLikes,
+      };
+    }
+
+    if (comment.children && comment.children.length > 0) {
+      const childResult = updateCommentLikeRecursive(comment.children, commentId);
+      if (childResult.result) foundResult = childResult.result;
+      return {
+        ...comment,
+        children: childResult.updated,
+      };
+    }
+
+    return comment;
+  });
+
+  return { updated, result: foundResult };
+};
+
+export const toggleDemoCommentLike = (commentId: number) => {
+  const map = getCommentMap();
+  let response: { liked: boolean; likes: number } | undefined;
+
+  const nextMap = Object.fromEntries(
+    Object.entries(map).map(([postId, comments]) => {
+      const updated = updateCommentLikeRecursive(comments, commentId);
+      if (updated.result) response = updated.result;
+      return [postId, updated.updated];
+    })
+  ) as CommentMap;
+
+  if (!response) throw new Error("댓글을 찾을 수 없습니다.");
+
+  write(DEMO_COMMENTS_KEY, nextMap);
+  return {
+    message: "좋아요가 반영되었습니다.",
+    data: {
+      commentId,
+      liked: response.liked,
+      likes: response.likes,
+    },
+  };
 };
 

@@ -7,6 +7,7 @@ import {
 } from "@/lib/stompClient";
 import { useAuthStore } from "@/stores/authStore";
 import { ChatMessage } from "@/types/chat";
+import { demoSendMessage } from "@/lib/mockChatApi";
 
 interface UseStompConnectionProps {
   roomId: string | null;
@@ -230,19 +231,20 @@ export const useStompConnection = ({
   const sendMessage = useCallback((targetRoomId: string, content: string) => {
     if (isDemoMode) {
       if (!targetRoomId || !content.trim()) return;
+      const created = demoSendMessage(targetRoomId, content);
       window.dispatchEvent(
         new CustomEvent("demo-chat-message", {
           detail: {
             roomId: targetRoomId,
             message: {
-              chatId: Date.now(),
+              chatId: created.chatId,
               senderNickname: "게스트",
-              message: content,
+              message: created.message,
               mine: true,
               messageType: "TEXT",
-              createdAt: new Date().toISOString(),
+              createdAt: created.createdAt,
               othersUnreadUsers: 0,
-              timeLabel: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
+              timeLabel: created.timeLabel,
               images: [],
             },
           },

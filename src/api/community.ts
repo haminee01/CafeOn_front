@@ -25,6 +25,8 @@ import {
   updateDemoPost,
   deleteDemoPost,
   createDemoComment,
+  toggleDemoPostLike,
+  toggleDemoCommentLike,
 } from "@/lib/mockCommunityApi";
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
@@ -485,12 +487,7 @@ export const deleteCommentMutator = async (
 export const toggleCommentLike = async (
   commentId: number
 ): Promise<CommentLikeResponse> => {
-  if (DEMO_MODE) {
-    return {
-      message: "좋아요가 반영되었습니다.",
-      data: { commentId, liked: true, likes: 1 },
-    };
-  }
+  if (DEMO_MODE) return toggleDemoCommentLike(commentId);
   try {
     const response = await apiClient.post(`/api/comments/${commentId}/like`);
     return response.data;
@@ -507,12 +504,7 @@ export const toggleCommentLike = async (
 export const togglePostLike = async (
   postId: number
 ): Promise<PostLikeResponse> => {
-  if (DEMO_MODE) {
-    return {
-      message: "좋아요가 반영되었습니다.",
-      data: { postId, liked: true, likes: 1 },
-    };
-  }
+  if (DEMO_MODE) return toggleDemoPostLike(postId);
   try {
     const response = await apiClient.post(`/api/posts/${postId}/like`);
     return response.data;

@@ -1,6 +1,11 @@
 import apiClient from "./axios";
 import { normalizeError as normalizeErrorUtil } from "@/utils/errorHandler";
 import * as mockApi from "@/lib/mockApi";
+import {
+  demoGetMyChatRooms,
+  demoMarkAsRead,
+  demoHistory,
+} from "@/lib/mockChatApi";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
@@ -957,7 +962,7 @@ export async function deleteWishlist(cafeId: number, category: string) {
 // 내 채팅방 목록 조회
 export async function getMyChatRooms() {
   if (DEMO_MODE) {
-    return mockApi.getMyChatRoomsMock();
+    return demoGetMyChatRooms();
   }
   try {
     const response = await apiClient.get("/api/my/chat/rooms");
@@ -971,7 +976,7 @@ export async function getMyChatRooms() {
 // 채팅 읽음 처리
 export async function markChatAsRead(roomId: string, lastReadChatId: string) {
   if (DEMO_MODE) {
-    return mockApi.markChatAsReadMock(roomId, lastReadChatId);
+    return demoMarkAsRead(roomId, Number(lastReadChatId || 0));
   }
   try {
     const response = await apiClient.post(
@@ -994,7 +999,19 @@ export async function markChatAsRead(roomId: string, lastReadChatId: string) {
 // 사용자의 읽지 않은 채팅 목록 조회
 export async function getNotificationsUnread() {
   if (DEMO_MODE) {
-    return mockApi.getNotificationsUnreadMock();
+    const rooms = demoGetMyChatRooms().data.content;
+    return rooms
+      .filter((room) => room.unreadCount > 0)
+      .map((room) => ({
+        notificationId: `demo-room-${room.roomId}`,
+        roomId: String(room.roomId),
+        chatId: 0,
+        title: "새 채팅 메시지",
+        preview: room.lastMessage,
+        deeplink: `/mypage/chats?room=${room.roomId}`,
+        read: false,
+        createdAt: room.lastMessageAt,
+      }));
   }
   try {
     const response = await apiClient.get("/api/notifications/unread");
@@ -1011,7 +1028,7 @@ export async function getChatMessagesWithUnreadCount(roomId: string) {
     if (!roomId || roomId === "undefined" || roomId === "null") {
       throw new Error("유효하지 않은 roomId입니다.");
     }
-    return mockApi.getChatMessagesWithUnreadCountMock(roomId);
+    return { data: { content: demoHistory(roomId, undefined, 200).data.content } };
   }
   try {
     if (!roomId || roomId === "undefined" || roomId === "null") {

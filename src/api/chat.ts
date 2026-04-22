@@ -3,7 +3,16 @@ import { getRefreshToken, useAuthStore } from "@/stores/authStore";
 import { useChatPreferencesStore } from "@/stores/chatPreferencesStore";
 import { normalizeError } from "@/utils/errorHandler";
 import apiClient from "@/lib/axios";
-import { demoHistory, demoJoinRoom, demoParticipants } from "@/lib/mockChatApi";
+import {
+  demoHistory,
+  demoJoinGroupRoom,
+  demoJoinDmRoom,
+  demoParticipants,
+  demoSendMessage,
+  demoToggleMute,
+  demoReadLatest,
+  demoLeaveRoom,
+} from "@/lib/mockChatApi";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
@@ -166,7 +175,7 @@ export const joinCafeGroupChat = async (
   cafeId: string,
   retryCount = 0
 ): Promise<ChatRoomJoinResponse> => {
-  if (DEMO_MODE) return demoJoinRoom(cafeId) as ChatRoomJoinResponse;
+  if (DEMO_MODE) return demoJoinGroupRoom(cafeId) as ChatRoomJoinResponse;
   // 중복 요청 방지
   const requestKey = `${cafeId}-${retryCount}`;
   const existingRequest = pendingRequests.get(requestKey);
@@ -290,7 +299,7 @@ export const joinCafeGroupChat = async (
 export const getChatParticipants = async (
   roomId: string
 ): Promise<ChatParticipant[]> => {
-  if (DEMO_MODE) return demoParticipants();
+  if (DEMO_MODE) return demoParticipants(roomId);
   try {
     const response = await apiClient.get(`/api/chat/rooms/${roomId}/members`);
     return response.data?.data || response.data || [];
@@ -423,12 +432,13 @@ export const sendChatMessage = async (
   retryCount = 0
 ): Promise<ChatMessageResponse> => {
   if (DEMO_MODE) {
+    const created = demoSendMessage(roomId, content);
     return {
-      messageId: `${Date.now()}`,
+      messageId: `${created.chatId}`,
       senderId: "guest-user",
       senderName: "게스트",
       content,
-      timestamp: new Date().toISOString(),
+      timestamp: created.createdAt,
       isMyMessage: true,
     };
   }
@@ -603,20 +613,7 @@ export const patchRead = async (
 export const createDmChat = async (
   counterpartId: string
 ): Promise<DmChatJoinResponse> => {
-  if (DEMO_MODE) {
-    return {
-      message: "ok",
-      data: {
-        userId: "guest-user",
-        memberId: 1,
-        roomId: Number(counterpartId.replace(/\D/g, "") || "201"),
-        type: "PRIVATE",
-        muted: false,
-        joinedAt: new Date().toISOString(),
-        alreadyJoined: true,
-      },
-    };
-  }
+  if (DEMO_MODE) return demoJoinDmRoom(counterpartId) as DmChatJoinResponse;
   try {
     const response = await apiClient.post(
       `/api/chat/rooms/dm/join`,
@@ -682,7 +679,7 @@ export const createDmChat = async (
  * DELETE /api/chat/rooms/{roomId}/members/me/leave
  */
 export const leaveChatRoomNew = async (roomId: string): Promise<void> => {
-  if (DEMO_MODE) return;
+  if (DEMO_MODE) return demoLeaveRoom(roomId);
   try {
     await apiClient.delete(`/api/chat/rooms/${roomId}/members/me/leave`);
   } catch (error: any) {
@@ -705,7 +702,7 @@ export const toggleChatMute = async (
   roomId: string,
   muted: boolean
 ): Promise<void> => {
-  if (DEMO_MODE) return;
+  if (DEMO_MODE) return demoToggleMute(roomId, muted);
   try {
     await apiClient.patch(`/api/chat/rooms/${roomId}/members/me/mute`, {
       muted,
@@ -728,7 +725,7 @@ export const toggleChatMute = async (
  * POST /api/chat/rooms/{roomId}/members/me/read-latest
  */
 export const readLatest = async (roomId: string): Promise<void> => {
-  if (DEMO_MODE) return;
+  if (DEMO_MODE) return demoReadLatest(roomId);
   try {
     await apiClient.post(`/api/chat/rooms/${roomId}/members/me/read-latest`);
   } catch (error: any) {

@@ -325,6 +325,7 @@ export const useDmChat = ({
           setChatHistory([]);
           setHasMoreHistory(false);
           setMessages([]);
+          lastLoadedRoomIdRef.current = existingRoomId;
         } else {
           const historyResponse = await getChatHistory(existingRoomId);
           if (historyResponse.data.content.length > 0) {
@@ -354,6 +355,7 @@ export const useDmChat = ({
             setChatHistory([]);
             setHasMoreHistory(false);
             setMessages([]);
+            lastLoadedRoomIdRef.current = existingRoomId;
           }
         }
 
@@ -806,20 +808,15 @@ export const useDmChat = ({
     }
   }, [existingRoomId]);
 
-  // existingRoomId가 바뀌거나 같은 채팅방으로 돌아왔을 때 채팅방 참여 및 히스토리 로드
+  // existingRoomId가 바뀌거나 미참여 상태일 때만 채팅방 참여
+  // 주의: 메시지 길이 변화에 따라 joinChat을 재호출하면 전송 시 루프/프리징이 발생할 수 있음
   useEffect(() => {
     if (!existingRoomId) return;
 
     const isRoomChanged = previousExistingRoomIdRef.current !== existingRoomId;
-    const isHistoryNotLoaded = lastLoadedRoomIdRef.current !== existingRoomId;
 
-    // 채팅방이 바뀌었거나, 같은 채팅방이지만 참여하지 않은 경우
-    // 또는 히스토리가 아직 로드되지 않은 경우
-    if (
-      isRoomChanged ||
-      (!isJoined && !isLoading && !error) ||
-      (isJoined && isHistoryNotLoaded && roomId === existingRoomId)
-    ) {
+    // 채팅방이 바뀌었거나, 같은 채팅방이지만 아직 참여하지 않은 경우에만 joinChat 수행
+    if (isRoomChanged || (!isJoined && !isLoading && !error)) {
       // ref 업데이트는 여기서만 수행 (중복 체크 방지)
       if (isRoomChanged) {
         previousExistingRoomIdRef.current = existingRoomId;
@@ -833,7 +830,7 @@ export const useDmChat = ({
       return () => clearTimeout(timeoutId);
     }
 
-    // 같은 채팅방이고 이미 참여 중인 경우
+    // 같은 채팅방이고 이미 참여 중인 경우: 누락된 히스토리/메시지만 보정
     if (!isRoomChanged && isJoined && roomId && existingRoomId === roomId) {
       // 이 roomId에 대해 히스토리를 아직 로드하지 않은 경우
       if (lastLoadedRoomIdRef.current !== existingRoomId) {
@@ -870,8 +867,8 @@ export const useDmChat = ({
     error,
     joinChat,
     roomId,
-    chatHistory.length,
-    messages.length,
+    chatHistory,
+    messages,
     hasMoreHistory,
     isLoadingHistory,
     loadMoreHistory,
