@@ -139,39 +139,15 @@ const ChatRoomList: React.FC<{
   );
 };
 
-const ChatRoomView: React.FC<{
-  activeRoom: MyChatRoom | null;
+const ChatRoomPanel: React.FC<{
+  activeRoom: MyChatRoom;
+  currentChat: any;
   onLeaveRoom: () => void;
   onToggleRoomList: () => void;
-}> = ({ activeRoom, onLeaveRoom, onToggleRoomList }) => {
+}> = ({ activeRoom, currentChat, onLeaveRoom, onToggleRoomList }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user } = useAuth();
   const currentUserId = user?.id || "user-me";
-  const lastActiveRoomIdRef = useRef<number | null>(null); // 채팅방 전환 추적
-  const hasJoinedOnceRef = useRef<Set<number>>(new Set()); // 입장한 채팅방 추적
-  const isLeavingRef = useRef(false); // 나가기 중인지 추적
-
-  // 채팅방 타입에 따라 다른 훅 사용
-  const isGroupChat = activeRoom?.type === "GROUP";
-  const isDmChat = activeRoom?.type === "PRIVATE";
-
-  // 카페 단체 채팅 훅 (type이 GROUP인 경우)
-  const cafeChat = useCafeChat({
-    cafeId: activeRoom?.cafeId?.toString() || "",
-    cafeName: activeRoom?.displayName || "",
-  });
-
-  // key를 사용하여 채팅방이 바뀔 때마다 완전히 재마운트
-  const dmChatKey = activeRoom?.roomId || "no-room";
-  const dmChat = useDmChat({
-    counterpartId: "", // 빈 문자열로 설정하여 자동 가입 방지
-    counterpartName: activeRoom?.displayName || "",
-    // 마이페이지에서는 이미 존재하는 채팅방이므로 roomId를 직접 사용
-    existingRoomId: isDmChat ? activeRoom?.roomId?.toString() : undefined,
-  });
-
-  // 현재 활성화된 채팅 데이터 선택
-  const currentChat = isGroupChat ? cafeChat : isDmChat ? dmChat : null;
 
   // 사이드바 닫기 핸들러
   const closeSidebar = () => {
@@ -189,6 +165,11 @@ const ChatRoomView: React.FC<{
   const handleSendMessage = async (message: string) => {
     if (currentChat) {
       await currentChat.sendMessage(message);
+      if (typeof currentChat.refreshMessages === "function") {
+        setTimeout(() => {
+          currentChat.refreshMessages();
+        }, 40);
+      }
     }
   };
 
@@ -199,32 +180,12 @@ const ChatRoomView: React.FC<{
 
   // 채팅방 나가기 핸들러
   const handleLeaveChat = async () => {
-    if (
-      currentChat &&
-      activeRoom &&
-      window.confirm("정말로 이 채팅방을 나가시겠습니까?")
-    ) {
+    if (window.confirm("정말로 이 채팅방을 나가시겠습니까?")) {
       try {
-        // 나가기 중 플래그 설정 (자동 재입장 방지)
-        isLeavingRef.current = true;
-
         await currentChat.leaveChat();
-
-        // 나간 채팅방을 추적 목록에서 제거하여 다시 클릭 시 재입장 가능
-        hasJoinedOnceRef.current.delete(activeRoom.roomId);
-        lastActiveRoomIdRef.current = null; // 마지막 활성 채팅방 ID도 초기화
-
-        // 채팅방 목록으로 돌아가기
         onLeaveRoom();
-
-        // 약간의 지연 후 플래그 해제
-        setTimeout(() => {
-          isLeavingRef.current = false;
-        }, 500);
       } catch (error) {
-        // 에러 발생 시 플래그 해제
-        isLeavingRef.current = false;
-        // 채팅방 뷰는 그대로 유지
+        console.error("채팅방 나가기 실패:", error);
       }
     }
   };
@@ -245,90 +206,22 @@ const ChatRoomView: React.FC<{
     event: React.MouseEvent<HTMLElement>
   ) => {};
 
-  // 채팅방이 선택되면 자동으로 참여 (채팅방이 바뀔 때만, 나간 후 재입장 방지)
+  // 주의: useCafeChat/useDmChat 내부에서 이미 자동 입장 처리를 수행한다.
+  // 여기서 joinChat을 다시 호출하면 방 입장 시 중복 요청/상태 루프가 생길 수 있어 비활성화한다.
   useEffect(() => {
-    if (!activeRoom || !currentChat) return;
-
-    const roomId = activeRoom.roomId;
-
-    // 나가기 중이면 자동 입장 안 함
-    if (isLeavingRef.current) {
-      return;
+    if (!activeRoom) return;
+    if (currentChat.isJoined && !currentChat.isLoading) {
+      const timer = setTimeout(() => {
+        currentChat.markAsRead?.();
+      }, 120);
+      return () => clearTimeout(timer);
     }
-
-    // 채팅방이 바뀌었을 때만 처리
-    const isRoomChanged = lastActiveRoomIdRef.current !== roomId;
-
-    // 같은 채팅방이고 이미 참여 중이면 히스토리만 확인
-    if (!isRoomChanged && currentChat.isJoined) {
-      // 히스토리가 없으면 로드
-      if (currentChat.chatHistory.length === 0 && currentChat.hasMoreHistory) {
-        currentChat.loadMoreHistory();
-      }
-      // 히스토리는 있지만 messages에 반영되지 않은 경우 (채팅방 전환 시)
-      else if (
-        currentChat.chatHistory.length > 0 &&
-        currentChat.messages.length === 0
-      ) {
-        // useDmChat이나 useCafeChat에서 자동으로 처리하도록 함
-        // 여기서는 추가 처리 없음
-      }
-      return;
-    }
-
-    // 이전 채팅방 ID 업데이트
-    if (isRoomChanged) {
-      lastActiveRoomIdRef.current = roomId;
-    }
-
-    // 이 채팅방에 한 번 입장했고 나간 경우 재입장 안 함
-    if (hasJoinedOnceRef.current.has(roomId) && !currentChat.isJoined) {
-      return;
-    }
-
-    if (!currentChat.isJoined && !currentChat.isLoading && !currentChat.error) {
-      // 채팅방 ID 기록
-      hasJoinedOnceRef.current.add(roomId);
-
-      // 약간의 지연을 두고 참여 (상태 안정화를 위해)
-      const timeoutId = setTimeout(async () => {
-        await currentChat.joinChat();
-        // readLatest는 useCafeChat과 useDmChat 내부에서 이미 호출됨
-      }, 300);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [activeRoom, currentChat, isGroupChat]);
-
-  if (!activeRoom) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="text-gray-400 text-6xl mb-4">💬</div>
-          <h2 className="text-xl font-semibold text-gray-600 mb-2">
-            채팅방을 선택해주세요
-          </h2>
-          <p className="text-gray-500">
-            왼쪽에서 채팅방을 클릭하여 대화를 시작하세요
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!currentChat) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="text-red-400 text-6xl mb-4">⚠️</div>
-          <h2 className="text-xl font-semibold text-gray-600 mb-2">
-            채팅방을 불러올 수 없습니다
-          </h2>
-          <p className="text-gray-500">채팅방 정보가 올바르지 않습니다</p>
-        </div>
-      </div>
-    );
-  }
+  }, [
+    activeRoom?.roomId,
+    currentChat?.isJoined,
+    currentChat?.isLoading,
+    currentChat?.markAsRead,
+  ]);
 
   return (
     <div className="flex-1 flex flex-col bg-white h-full relative overflow-hidden">
@@ -447,6 +340,90 @@ const ChatRoomView: React.FC<{
   );
 };
 
+const GroupChatRoomView: React.FC<{
+  activeRoom: MyChatRoom;
+  onLeaveRoom: () => void;
+  onToggleRoomList: () => void;
+}> = ({ activeRoom, onLeaveRoom, onToggleRoomList }) => {
+  const cafeChat = useCafeChat({
+    cafeId: activeRoom.cafeId?.toString() || "",
+    cafeName: activeRoom.displayName || "",
+    existingRoomId: activeRoom.roomId.toString(),
+  });
+
+  return (
+    <ChatRoomPanel
+      activeRoom={activeRoom}
+      currentChat={cafeChat}
+      onLeaveRoom={onLeaveRoom}
+      onToggleRoomList={onToggleRoomList}
+    />
+  );
+};
+
+const DmChatRoomView: React.FC<{
+  activeRoom: MyChatRoom;
+  onLeaveRoom: () => void;
+  onToggleRoomList: () => void;
+}> = ({ activeRoom, onLeaveRoom, onToggleRoomList }) => {
+  const dmChat = useDmChat({
+    counterpartId: "",
+    counterpartName: activeRoom.displayName || "",
+    existingRoomId: activeRoom.roomId.toString(),
+  });
+
+  return (
+    <ChatRoomPanel
+      activeRoom={activeRoom}
+      currentChat={dmChat}
+      onLeaveRoom={onLeaveRoom}
+      onToggleRoomList={onToggleRoomList}
+    />
+  );
+};
+
+const ChatRoomView: React.FC<{
+  activeRoom: MyChatRoom | null;
+  onLeaveRoom: () => void;
+  onToggleRoomList: () => void;
+}> = ({ activeRoom, onLeaveRoom, onToggleRoomList }) => {
+  if (!activeRoom) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-gray-400 text-6xl mb-4">💬</div>
+          <h2 className="text-xl font-semibold text-gray-600 mb-2">
+            채팅방을 선택해주세요
+          </h2>
+          <p className="text-gray-500">
+            왼쪽에서 채팅방을 클릭하여 대화를 시작하세요
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeRoom.type === "GROUP") {
+    return (
+      <GroupChatRoomView
+        key={`group-${activeRoom.roomId}`}
+        activeRoom={activeRoom}
+        onLeaveRoom={onLeaveRoom}
+        onToggleRoomList={onToggleRoomList}
+      />
+    );
+  }
+
+  return (
+    <DmChatRoomView
+      key={`dm-${activeRoom.roomId}`}
+      activeRoom={activeRoom}
+      onLeaveRoom={onLeaveRoom}
+      onToggleRoomList={onToggleRoomList}
+    />
+  );
+};
+
 const ChatListPageContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -455,7 +432,6 @@ const ChatListPageContent = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeRoomId, setActiveRoomId] = useState<number | null>(null);
   const [activeRoom, setActiveRoom] = useState<MyChatRoom | null>(null);
-  const previousRoomIdRef = useRef<number | null>(null); // 이전에 선택했던 채팅방 ID 추적 (새로고침용)
 
   // 채팅방 목록 로드
   const loadChatRooms = useCallback(async () => {
@@ -485,22 +461,6 @@ const ChatListPageContent = () => {
   }, [activeRoomId]);
 
   const handleRoomClick = (roomId: number) => {
-    // 다른 채팅방을 선택했다가 다시 같은 채팅방으로 돌아올 때 새로고침
-    // previousRoomIdRef에 저장된 이전 채팅방이 있고,
-    // 클릭한 채팅방이 이전에 선택했던 채팅방과 같고,
-    // 현재 활성화된 채팅방과 다른 경우 (다른 채팅방을 갔다가 돌아온 경우)
-    if (
-      previousRoomIdRef.current !== null &&
-      previousRoomIdRef.current === roomId &&
-      activeRoomId !== roomId
-    ) {
-      // 같은 채팅방으로 돌아온 경우 새로고침
-      window.location.reload();
-      return;
-    }
-
-    // 이전 채팅방 ID 업데이트 (현재 활성화된 채팅방 저장)
-    previousRoomIdRef.current = activeRoomId;
     setActiveRoomId(roomId);
     const room = chatRooms.find((r) => r.roomId === roomId);
 
@@ -542,14 +502,24 @@ const ChatListPageContent = () => {
   useEffect(() => {
     loadChatRooms();
 
-    // 주기적으로 채팅방 목록 새로고침 (3초마다)
-    // 모든 채팅방의 안 읽은 메시지 수를 실시간 업데이트
+    // 과도한 폴링은 메인 스레드를 점유해 채팅 입력 시 렉/멈춤을 유발할 수 있다.
+    // 채팅 화면에서는 완만하게 동기화한다.
     const interval = setInterval(() => {
-      loadChatRooms();
-    }, 3000);
+      if (document.visibilityState === "visible") {
+        loadChatRooms();
+      }
+    }, 12000);
 
     return () => clearInterval(interval);
   }, [activeRoomId]); // activeRoomId 변경 시에도 새로고침
+
+  useEffect(() => {
+    const handler = () => {
+      loadChatRooms();
+    };
+    window.addEventListener("demo-chat-updated", handler);
+    return () => window.removeEventListener("demo-chat-updated", handler);
+  }, [loadChatRooms]);
 
   const [isMobileRoomListOpen, setIsMobileRoomListOpen] = useState(false);
 
@@ -601,7 +571,9 @@ const ChatListPageContent = () => {
             <ChatRoomView
               activeRoom={activeRoom}
               onLeaveRoom={() => {
-                window.location.reload();
+                setActiveRoom(null);
+                setActiveRoomId(null);
+                loadChatRooms();
               }}
               onToggleRoomList={() => setIsMobileRoomListOpen((prev) => !prev)}
             />

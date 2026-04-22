@@ -97,12 +97,12 @@ export const usePrivateChatFlow = (
       }
 
       // actualUserId가 유효한 사용자 ID인지 확인
+      // 데모 모드에서는 "user-2" 같은 ID도 정상 대상이므로 허용한다.
       const isValidUserId =
         actualUserId &&
         actualUserId !== "user-me" &&
         actualUserId !== "1" &&
         actualUserId !== "user-1" &&
-        !actualUserId.startsWith("user-") &&
         actualUserId.length >= 2; // 최소 2자 이상
 
       if (!isValidUserId) {
@@ -116,8 +116,8 @@ export const usePrivateChatFlow = (
         name: senderName,
       };
 
-      // 이미 열려있는 팝업을 다시 클릭하면 닫기
-      if (targetUserForPopup && targetUserForPopup.id === senderId) {
+      // 이미 열려있는 팝업을 다시 클릭하면 닫기 (실제 매핑된 ID 기준)
+      if (targetUserForPopup && targetUserForPopup.id === actualUserId) {
         closePopup();
         return;
       }

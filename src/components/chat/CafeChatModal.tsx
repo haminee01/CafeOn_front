@@ -26,7 +26,6 @@ const CafeChatModal: React.FC<CafeChatModalProps> = ({
   useEscapeKey(onClose);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
-  const hasJoinedOnce = useRef(false); // 한 번 입장했는지 추적
 
   // 현재 사용자 정보 가져오기
   const { user } = useAuth();
@@ -46,7 +45,6 @@ const CafeChatModal: React.FC<CafeChatModalProps> = ({
     hasMoreHistory,
     isLoadingHistory,
     isMuted,
-    joinChat,
     leaveChat,
     sendMessage,
     refreshParticipants,
@@ -107,18 +105,8 @@ const CafeChatModal: React.FC<CafeChatModalProps> = ({
     closeSidebar();
   };
 
-  // 채팅방이 열릴 때 자동으로 참여 (한 번만)
-  useEffect(() => {
-    // 이미 한 번 입장 시도했으면 재입장 안 함
-    if (hasJoinedOnce.current) {
-      return;
-    }
-
-    if (roomId && !isJoined && !isLoading) {
-      hasJoinedOnce.current = true;
-      joinChat();
-    }
-  }, [roomId, isJoined, isLoading, joinChat]);
+  // 주의: useCafeChat 내부에서 자동 입장 처리됨.
+  // 모달에서 joinChat을 중복 호출하면 상태 루프/프리징이 발생할 수 있어 여기서는 호출하지 않음.
 
   // 채팅방이 열릴 때 참여자 목록 강제 로드 (알림 상태 확인용)
   useEffect(() => {
@@ -233,7 +221,7 @@ const CafeChatModal: React.FC<CafeChatModalProps> = ({
             {/* Header */}
             <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-gray-200 p-4 gap-2 rounded-t-xl z-10 shadow-sm bg-white sticky top-0">
               <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-                {cafeName} 채팅방
+                {cafeName}
               </h2>
               <div className="flex items-center space-x-2">
                 {/* 사이드바 토글 버튼 (햄버거 메뉴) */}

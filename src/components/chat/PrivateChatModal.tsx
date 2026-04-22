@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import ChatMessageList from "./ChatMessageList";
 import ChatMessageInput from "./ChatMessageInput";
 import ChatSidebar from "./ChatSidebar";
@@ -20,7 +20,6 @@ const PrivateChatModal: React.FC<PrivateChatModalProps> = ({
   onClose,
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const hasJoinedOnce = useRef(false); // 한 번 입장했는지 추적
 
   // 현재 사용자 정보 가져오기
   const { user } = useAuth();
@@ -40,7 +39,6 @@ const PrivateChatModal: React.FC<PrivateChatModalProps> = ({
     isLoadingHistory,
     isMuted,
     stompConnected,
-    joinChat,
     leaveChat,
     sendMessage,
     refreshParticipants,
@@ -52,19 +50,8 @@ const PrivateChatModal: React.FC<PrivateChatModalProps> = ({
     counterpartName: targetUser.name,
   });
 
-  // 컴포넌트 마운트 시 자동으로 채팅방 참여 (한 번만)
-  useEffect(() => {
-    // 이미 한 번 입장 시도했으면 재입장 안 함
-    if (hasJoinedOnce.current) {
-      return;
-    }
-
-    // 참여하지 않았고, 로딩 중이 아니고, 에러가 없으면 참여
-    if (!isJoined && !isLoading && !error) {
-      hasJoinedOnce.current = true;
-      joinChat();
-    }
-  }, [isJoined, isLoading, error, joinChat, targetUser.id, roomId]);
+  // 주의: useDmChat 내부에서 자동 입장 처리됨.
+  // 모달 레벨에서 중복 joinChat 호출 시 프리징 가능성이 있어 별도 호출하지 않음.
 
   // 사이드바 닫기 핸들러
   const closeSidebar = () => {
@@ -105,13 +92,6 @@ const PrivateChatModal: React.FC<PrivateChatModalProps> = ({
   const handleSidebarProfileClick = () => {
     closeSidebar();
   };
-
-  // 채팅방이 열릴 때 자동으로 참여
-  useEffect(() => {
-    if (roomId && !isJoined && !isLoading) {
-      joinChat();
-    }
-  }, [roomId, isJoined, isLoading, joinChat]);
 
   // 채팅방이 열릴 때 참여자 목록 강제 로드 (알림 상태 확인용)
   useEffect(() => {
@@ -177,7 +157,7 @@ const PrivateChatModal: React.FC<PrivateChatModalProps> = ({
             {/* Header */}
             <header className="flex items-center justify-between border-gray-200 p-4 rounded-t-xl z-10 shadow-sm bg-white sticky top-0 bg-[#6E4213]">
               <h2 className="text-xl font-bold text-gray-900">
-                {targetUser.name} 님과의 1:1 대화
+                {targetUser.name || targetUser.id}
               </h2>
               <div className="flex items-center space-x-2">
                 {/* 사이드바 토글 버튼 (햄버거 메뉴) */}

@@ -173,9 +173,10 @@ async function checkAuthStatus(): Promise<boolean> {
  */
 export const joinCafeGroupChat = async (
   cafeId: string,
+  cafeName?: string,
   retryCount = 0
 ): Promise<ChatRoomJoinResponse> => {
-  if (DEMO_MODE) return demoJoinGroupRoom(cafeId) as ChatRoomJoinResponse;
+  if (DEMO_MODE) return demoJoinGroupRoom(cafeId, cafeName) as ChatRoomJoinResponse;
   // 중복 요청 방지
   const requestKey = `${cafeId}-${retryCount}`;
   const existingRequest = pendingRequests.get(requestKey);
@@ -245,7 +246,7 @@ export const joinCafeGroupChat = async (
             const isAuthValid = await checkAuthStatus();
             if (isAuthValid) {
               await new Promise((resolve) => setTimeout(resolve, 2000));
-              return joinCafeGroupChat(cafeId, retryCount + 1);
+              return joinCafeGroupChat(cafeId, cafeName, retryCount + 1);
             }
           }
         }
@@ -264,7 +265,7 @@ export const joinCafeGroupChat = async (
             const isAuthValid = await checkAuthStatus();
             if (isAuthValid) {
               await new Promise((resolve) => setTimeout(resolve, 3000));
-              return joinCafeGroupChat(cafeId, retryCount + 1);
+              return joinCafeGroupChat(cafeId, cafeName, retryCount + 1);
             }
           }
         }
@@ -275,12 +276,13 @@ export const joinCafeGroupChat = async (
         await new Promise((resolve) =>
           setTimeout(resolve, 1000 * (retryCount + 1))
         );
-        return joinCafeGroupChat(cafeId, retryCount + 1);
+        return joinCafeGroupChat(cafeId, cafeName, retryCount + 1);
       }
 
       throw normalizeError(error, {
         action: "joinCafeGroupChat",
         cafeId,
+        cafeName,
         retryCount,
       });
     }

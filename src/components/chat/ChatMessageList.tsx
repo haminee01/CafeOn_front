@@ -13,6 +13,7 @@ import { ChatHistoryMessage } from "@/api/chat";
 import { useAuth } from "@/contexts/AuthContext";
 import { getChatMessagesWithUnreadCount } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 interface ChatMessageListProps {
   messages: ChatMessage[];
@@ -145,6 +146,11 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
     if (!roomId) {
       return;
     }
+    if (DEMO_MODE) {
+      // 데모 모드에서는 메시지 객체의 othersUnreadUsers를 직접 사용한다.
+      // 매번 저장소 재조회하면 입력 중 프리징이 발생할 수 있어 readStatus 맵 갱신을 생략한다.
+      return;
+    }
 
     try {
       const response = await getChatMessagesWithUnreadCount(roomId);
@@ -182,20 +188,15 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
     fetchReadStatus();
   }, [fetchReadStatus]);
 
-  // 메시지가 변경될 때마다 읽음 상태 업데이트 (실시간 반영)
-  useEffect(() => {
-    if (messages.length > 0 || chatHistory.length > 0) {
-      // 메시지가 있을 때만 읽음 상태 조회
-      fetchReadStatus();
-    }
-  }, [messages, chatHistory, fetchReadStatus]);
+  // 메시지 배열 자체 변화마다 즉시 조회하면 렌더/스토리지 부하가 커져 프리징을 유발할 수 있어
+  // room 변경, 커스텀 이벤트 시점에만 조회한다.
 
   // 새 메시지 추가 및 읽음 처리 이벤트 감지하여 읽음 상태 업데이트
   useEffect(() => {
+    if (DEMO_MODE) return;
     const handleChatMessageAdded = (event: CustomEvent) => {
       const { roomId: eventRoomId } = event.detail;
       if (eventRoomId === roomId) {
-        // 약간의 지연을 두고 읽음 상태 조회 (서버에서 처리 시간 고려)
         setTimeout(() => {
           fetchReadStatus();
         }, 500);
@@ -205,7 +206,6 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({
     const handleChatMarkedAsRead = (event: CustomEvent) => {
       const { roomId: eventRoomId } = event.detail;
       if (eventRoomId === roomId) {
-        // 약간의 지연을 두고 읽음 상태 조회 (서버에서 처리 시간 고려)
         setTimeout(() => {
           fetchReadStatus();
         }, 500);
