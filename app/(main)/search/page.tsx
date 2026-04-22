@@ -147,7 +147,7 @@ function SearchResultsPageContent() {
   };
 
   return (
-    <div>
+    <div className="page-shell">
       <SearchBar
         value={searchQuery}
         onChange={setSearchQuery}
@@ -155,7 +155,7 @@ function SearchResultsPageContent() {
         placeholder="어떤 카페를 찾아볼까요?"
       />
 
-      <div className="container mx-auto px-4 sm:px-6 md:px-8">
+      <div className="content-container">
         {/* 카테고리 필터 - 검색 결과의 태그 표시 */}
         {availableTags.length > 0 && (
           <div className="mb-6 sm:mb-8 flex justify-center">

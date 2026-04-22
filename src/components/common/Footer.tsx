@@ -12,7 +12,7 @@ const Footer = () => {
 
   return (
     <footer>
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 md:px-12 lg:px-16 py-6 sm:py-8">
+      <div className="content-container py-6 sm:py-8">
         <div className="border-b border-gray-50 mb-6 sm:mb-12"></div>
 
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4 sm:gap-0">

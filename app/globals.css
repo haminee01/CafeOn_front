@@ -19,6 +19,24 @@ body {
   background: #fff;
 }
 
+:root {
+  --content-max-width: 1280px;
+}
+
+@layer components {
+  .content-container {
+    @apply w-full max-w-[var(--content-max-width)] mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .page-shell {
+    @apply min-h-screen py-4 sm:py-6 lg:py-8;
+  }
+
+  .section-gap {
+    @apply mt-6 sm:mt-8 lg:mt-10;
+  }
+}
+
 /* Google Maps 인포윈도우 포커스 스타일 제거 */
 .gm-style-iw {
   outline: none !important;

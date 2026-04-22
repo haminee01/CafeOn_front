@@ -50,7 +50,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    <div className="relative flex items-center w-full sm:w-4/5 md:w-3/5 lg:w-5/12 mx-auto mb-6 sm:mb-8 md:mb-10 px-4 sm:px-0">
+    <div className="relative flex items-center w-full sm:w-11/12 md:w-4/5 lg:w-3/5 xl:w-5/12 mx-auto mb-6 sm:mb-8 lg:mb-10">
       <div className="relative flex-1">
         <input
           type="text"
@@ -59,14 +59,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
           onKeyDown={handleKeyPress}
           placeholder={placeholder}
           disabled={disabled}
-          className="w-full border border-primary rounded-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base placeholder-gray-400 focus:outline-none
+          className="w-full border border-primary rounded-full pr-11 sm:pr-12 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base placeholder-gray-400 focus:outline-none
         focus:ring-0
         focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
         />
         <button
           onClick={handleSearch}
           disabled={disabled}
-          className="absolute right-1 top-1/2 transform -translate-y-1/2 w-7 h-7 sm:w-8 sm:h-8 mr-1 bg-primary rounded-full flex items-center justify-center disabled:cursor-not-allowed"
+          className="absolute right-1.5 top-1/2 transform -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 bg-primary rounded-full flex items-center justify-center disabled:cursor-not-allowed"
         >
           <FaSearch className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
         </button>

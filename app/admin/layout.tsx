@@ -46,10 +46,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     <div className="min-h-screen">
       {/* 상단 헤더 - 로그인/로그아웃만 */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="px-6 py-4">
+        <div className="content-container py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-primary">CafeOn.</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-primary">CafeOn.</h1>
             </div>
             <button
               onClick={handleLogout}
@@ -90,7 +90,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* 메인 콘텐츠 */}
         <main className="flex-1 lg:ml-64">
-          <div className="p-6">{children}</div>
+          <div className="px-4 py-4 sm:px-6 sm:py-6">{children}</div>
         </main>
       </div>
 

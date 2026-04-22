@@ -23,8 +23,8 @@ const CafeCarousel: React.FC<CafeCarouselProps> = ({
   const getCardsPerPage = () => {
     if (typeof window === "undefined") return 4;
     const width = window.innerWidth;
-    if (width >= 1024) return 4; // lg: 데스크탑
-    if (width >= 768) return 3; // md: 태블릿
+    if (width >= 1280) return 4; // 노트북/데스크탑
+    if (width >= 768) return 3; // 아이패드
     return 2; // 모바일
   };
 
@@ -64,16 +64,16 @@ const CafeCarousel: React.FC<CafeCarouselProps> = ({
 
   return (
     <div className={`w-full ${className}`}>
-      <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
+      <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-1">
         {title}
       </h2>
-      <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
+      <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-4 sm:mb-5 lg:mb-6">
         {description}
       </p>
 
       <div className="relative">
         {/* 카페 카드 그리드 - 반응형 */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5 px-2 sm:px-4 md:px-8 lg:px-12">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5 px-0 sm:px-1 md:px-8 lg:px-12">
           {currentCafes.map((cafe) => (
             <CafeCard key={cafe.cafe_id} cafe={cafe} />
           ))}

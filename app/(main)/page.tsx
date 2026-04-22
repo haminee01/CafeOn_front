@@ -54,8 +54,8 @@ export default function HomePage() {
     fetchCafes();
   }, []);
   return (
-    <div className="min-h-screen px-4 sm:px-6 lg:px-8 xl:px-0">
-      <div className="w-full max-w-6xl xl:max-w-7xl mx-auto">
+    <div className="page-shell">
+      <div className="content-container">
         <SearchBar />
 
         <Map className="mb-6 sm:mb-8 md:mb-10" cafes={randomCafes} />
@@ -72,7 +72,7 @@ export default function HomePage() {
         )}
 
         {hotCafes.length > 0 && (
-          <div className="mt-6 sm:mt-8 md:mt-10">
+          <div className="section-gap">
             <CafeCarousel
               cafes={hotCafes}
               title="요즘 뜨고 있는 카페"
@@ -82,7 +82,7 @@ export default function HomePage() {
           </div>
         )}
 
-        <div className="mt-6 sm:mt-8 md:mt-10">
+        <div className="section-gap">
           <CafeCarousel
             cafes={randomCafes}
             title="이런 카페는 어때요?"

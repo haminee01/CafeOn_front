@@ -15,12 +15,14 @@ export default function MypageLayout({
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <div className="flex flex-col lg:flex-row min-h-[calc(100vh-200px)] max-w-7xl mx-auto py-6 sm:py-8 lg:py-10 px-4 sm:px-6 lg:px-8">
+      <div className="content-container flex flex-col lg:flex-row gap-4 lg:gap-6 min-h-[calc(100vh-200px)] py-6 sm:py-8 lg:py-10">
         {/* 1. 사이드바 영역 */}
         <MypageSidebar />
 
         {/* 2. 메인 컨텐츠 영역 */}
-        <main className="flex-1 min-w-0 p-4 sm:p-6">{children}</main>
+        <main className="flex-1 min-w-0 p-4 sm:p-6 bg-white rounded-xl border border-gray-100">
+          {children}
+        </main>
       </div>
 
       <Footer />
