@@ -1,5 +1,6 @@
 import { useState } from "react";
 import apiClient from "@/lib/axios";
+import { createQuestionMock } from "@/lib/mockQnaApi";
 
 // 가시성 enum
 export enum QuestionVisibility {
@@ -32,6 +33,7 @@ interface ApiResponse<T> {
 }
 
 export const useCreateQuestion = () => {
+  const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,6 +44,9 @@ export const useCreateQuestion = () => {
     setError(null);
 
     try {
+      if (DEMO_MODE) {
+        return createQuestionMock(questionData);
+      }
       const response = await apiClient.post<
         ApiResponse<CreateQuestionResponse>
       >("/api/qna/questions", questionData);

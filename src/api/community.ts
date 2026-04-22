@@ -17,6 +17,16 @@ import {
   ReportResponse,
 } from "@/types/Post";
 import apiClient from "@/lib/axios";
+import {
+  listDemoPosts,
+  getDemoPostDetail,
+  getDemoComments,
+  createDemoPost,
+  updateDemoPost,
+  deleteDemoPost,
+  createDemoComment,
+} from "@/lib/mockCommunityApi";
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 // GET /api/posts/{id}/comments 응답 타입 (댓글 목록)
 export type CommentListResponse = Comment[];
@@ -93,6 +103,7 @@ export const getPosts = async (
     sort?: "latest" | "likes" | "views";
   } = { page: 1 }
 ): Promise<PostListResponse> => {
+  if (DEMO_MODE) return listDemoPosts(query);
   const backendPageNumber = Math.max(0, query.page - 1);
   const response = await apiClient.get<BackendPostListResponse>("/api/posts", {
     params: {
@@ -140,6 +151,7 @@ export const getPosts = async (
 export const getPostDetail = async (
   postId: number
 ): Promise<PostDetailResponse> => {
+  if (DEMO_MODE) return getDemoPostDetail(postId);
   const response = await apiClient.get<BackendPostDetailApiResponse>(
     `/api/posts/${postId}`
   );
@@ -216,6 +228,7 @@ interface BackendCommentListResponse {
 export const getComments = async (
   postId: number
 ): Promise<CommentListResponse> => {
+  if (DEMO_MODE) return getDemoComments(postId);
   try {
     const response = await apiClient.get<BackendCommentListResponse>(
       `/api/posts/${postId}/comments`
@@ -283,6 +296,13 @@ export async function createPostMutator(
     };
   }
 ): Promise<PostCreateResponse> {
+  if (DEMO_MODE) {
+    return createDemoPost({
+      title: arg.title,
+      content: arg.content,
+      type: arg.type,
+    });
+  }
   const formData = new FormData();
 
   // 게시글 데이터를 JSON으로 추가 (백엔드 @RequestPart 구조에 맞춤)
@@ -336,6 +356,14 @@ export async function updatePostMutator(
     arg: PostUpdateRequest;
   }
 ): Promise<PostUpdateResponse> {
+  if (DEMO_MODE) {
+    const postId = Number(url.split("/").pop());
+    return updateDemoPost(postId, {
+      title: arg.title,
+      content: arg.content,
+      type: arg.type,
+    });
+  }
   // URL에서 postId 추출
   const postId = url.split("/").pop();
 
@@ -378,6 +406,7 @@ export async function updatePostMutator(
 export async function deletePostMutator(
   postId: number
 ): Promise<PostDeleteResponse> {
+  if (DEMO_MODE) return deleteDemoPost(postId);
   try {
     const response = await apiClient.delete(`/api/posts/${postId}`);
     return response.data || { message: "게시글이 삭제되었습니다." };
@@ -396,6 +425,7 @@ export async function createCommentMutator(
   postId: number,
   arg: CommentCreateRequest
 ): Promise<CommentCreateResponse> {
+  if (DEMO_MODE) return createDemoComment(postId, arg);
   try {
     const response = await apiClient.post(`/api/posts/${postId}/comments`, arg);
     return response.data;
@@ -413,6 +443,7 @@ export const updateCommentMutator = async (
   commentId: number,
   arg: { content: string }
 ): Promise<CommentUpdateResponse> => {
+  if (DEMO_MODE) return { message: "댓글이 수정되었습니다." };
   try {
     const response = await apiClient.put(
       `/api/posts/${postId}/comments/${commentId}`,
@@ -432,6 +463,7 @@ export const deleteCommentMutator = async (
   postId: number,
   commentId: number
 ): Promise<CommentDeleteResponse> => {
+  if (DEMO_MODE) return { message: "댓글이 삭제되었습니다." };
   try {
     const response = await apiClient.delete(
       `/api/posts/${postId}/comments/${commentId}`
@@ -453,6 +485,12 @@ export const deleteCommentMutator = async (
 export const toggleCommentLike = async (
   commentId: number
 ): Promise<CommentLikeResponse> => {
+  if (DEMO_MODE) {
+    return {
+      message: "좋아요가 반영되었습니다.",
+      data: { commentId, liked: true, likes: 1 },
+    };
+  }
   try {
     const response = await apiClient.post(`/api/comments/${commentId}/like`);
     return response.data;
@@ -469,6 +507,12 @@ export const toggleCommentLike = async (
 export const togglePostLike = async (
   postId: number
 ): Promise<PostLikeResponse> => {
+  if (DEMO_MODE) {
+    return {
+      message: "좋아요가 반영되었습니다.",
+      data: { postId, liked: true, likes: 1 },
+    };
+  }
   try {
     const response = await apiClient.post(`/api/posts/${postId}/like`);
     return response.data;
@@ -487,6 +531,7 @@ export const createPostReport = async (
   postId: number,
   content: string
 ): Promise<{ message: string }> => {
+  if (DEMO_MODE) return { message: "신고가 접수되었습니다." };
   try {
     const response = await apiClient.post(`/api/posts/${postId}/reports`, {
       content,
@@ -505,6 +550,7 @@ export const createPostReport = async (
 export const createReport = async (
   reportData: ReportRequest
 ): Promise<ReportResponse> => {
+  if (DEMO_MODE) return { message: "신고가 접수되었습니다." };
   try {
     const response = await apiClient.post("/api/reports", reportData);
     return response.data;
@@ -519,6 +565,7 @@ export const createCommentReport = async (
   commentId: number,
   content: string
 ): Promise<{ message: string }> => {
+  if (DEMO_MODE) return { message: "신고가 접수되었습니다." };
   try {
     const response = await apiClient.post(
       `/api/comments/${commentId}/reports`,

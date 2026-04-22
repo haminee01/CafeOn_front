@@ -6,7 +6,8 @@ import Button from "@/components/common/Button";
 import { socialProviders, generateSocialAuthUrl } from "@/data/socialAuth";
 import Header from "@/components/common/Header";
 import { useAuth } from "@/contexts/AuthContext";
-import { signup, login, updateProfileImage } from "@/lib/api";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
+const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 interface ChatMessage {
   id: string;
@@ -336,65 +337,56 @@ function SignupPageContent() {
   // 회원가입 처리
   const handleSignup = async () => {
     try {
-      const signupData = {
-        name: formData.name,
+      if (isDemoMode) {
+        authLogin(`demo-signup-token-${Date.now()}`, `demo-signup-refresh-${Date.now()}`, {
+          userId: `demo-${Date.now()}`,
+          email: formData.email,
+          nickname: formData.nickname || "데모유저",
+          username: formData.nickname || "데모유저",
+          name: formData.name || "데모 사용자",
+          profileImageUrl: null,
+        });
+        router.push(redirectPath || "/");
+        return;
+      }
+
+      if (!isSupabaseConfigured || !supabase) {
+        throw new Error("Supabase 설정이 없어 회원가입을 진행할 수 없습니다.");
+      }
+
+      const signUpResult = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        nickname: formData.nickname,
-        phone: formData.phone,
-      };
+        options: {
+          data: {
+            name: formData.name,
+            nickname: formData.nickname,
+            phone: formData.phone,
+          },
+        },
+      });
+      if (signUpResult.error) throw signUpResult.error;
 
-      // 회원가입 API 호출
-      const signupResponse = await signup(signupData);
-
-      // 회원가입 성공 후 자동 로그인
-      const loginResponse = await login({
+      const signInResult = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
       });
-
-      // 로그인 성공 시 토큰 저장 및 홈으로 리다이렉트
-      if (loginResponse?.data && loginResponse.data.token) {
-        const { token, refreshToken } = loginResponse.data;
-
-        // 프로필 이미지가 있으면 업로드
-        if (profileImage) {
-          try {
-            const imageResponse = await updateProfileImage(profileImage);
-            const imageUrl =
-              imageResponse.data?.profileImageUrl ||
-              imageResponse.data?.profileImageUrl;
-            const userData = {
-              userId: signupResponse.data?.userId || "",
-              email: formData.email,
-              nickname: formData.nickname,
-              username: formData.nickname,
-              profileImageUrl: imageUrl,
-            };
-            authLogin(token, refreshToken, userData);
-          } catch (error: any) {
-            console.error("[Signup] 프로필 이미지 업로드 실패:", error);
-            // 이미지 업로드 실패해도 회원가입은 성공으로 처리
-            const userData = {
-              userId: signupResponse.data?.userId || "",
-              email: formData.email,
-              nickname: formData.nickname,
-              username: formData.nickname,
-            };
-            authLogin(token, refreshToken, userData);
-          }
-        } else {
-          const userData = {
-            userId: signupResponse.data?.userId || "",
-            email: formData.email,
-            nickname: formData.nickname,
-          };
-          authLogin(token, refreshToken, userData);
-        }
-
-        // redirect 파라미터가 있으면 그 경로로, 없으면 홈으로
-        router.push(redirectPath || "/");
+      if (signInResult.error || !signInResult.data.session || !signInResult.data.user) {
+        throw signInResult.error || new Error("자동 로그인에 실패했습니다.");
       }
+
+      authLogin(
+        signInResult.data.session.access_token,
+        signInResult.data.session.refresh_token ?? "",
+        {
+          userId: signInResult.data.user.id,
+          email: formData.email,
+          nickname: formData.nickname,
+          username: formData.nickname,
+        }
+      );
+
+      router.push(redirectPath || "/");
     } catch (error: any) {
       console.error("회원가입/로그인 실패:", error);
       // 에러 메시지 표시

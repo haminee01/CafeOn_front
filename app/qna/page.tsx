@@ -8,7 +8,6 @@ import { QuestionVisibility } from "@/types/qna";
 import Header from "@/components/common/Header";
 import Footer from "@/components/common/Footer";
 import { formatSimpleDate } from "@/utils/dateFormat";
-import { getAccessToken } from "@/stores/authStore";
 import { colors } from "@/constants/colors";
 
 // 페이지네이션 상수
@@ -40,44 +39,14 @@ const QuestionList = ({
     keyword: keyword || undefined,
   });
 
-  // 각 문의의 상태를 조회하는 함수
-  const fetchQuestionStatus = async (questionId: number) => {
-    try {
-      const token = getAccessToken();
-      const response = await fetch(
-        `http://localhost:8080/api/qna/questions/${questionId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          credentials: "include",
-        }
-      );
-
-      if (response.ok) {
-        const apiResponse = await response.json();
-        const status = apiResponse.data.status;
-        setQuestionStatuses((prev) => ({
-          ...prev,
-          [questionId]: status,
-        }));
-      }
-    } catch (error) {
-      console.error(`문의 ${questionId} 상태 조회 실패:`, error);
-    }
-  };
-
-  // 문의 목록이 변경될 때마다 각 문의의 상태를 조회
   useEffect(() => {
     if (questions && questions.length > 0) {
+      // 목록 응답의 status를 그대로 사용 (데모/실서버 공통)
+      const nextStatuses: Record<number, string | null> = {};
       questions.forEach((question) => {
-        if (!questionStatuses[question.id]) {
-          fetchQuestionStatus(question.id);
-        }
+        nextStatuses[question.id] = (question as any).status ?? null;
       });
+      setQuestionStatuses(nextStatuses);
     }
   }, [questions]);
 

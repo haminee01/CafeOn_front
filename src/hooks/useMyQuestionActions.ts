@@ -1,5 +1,6 @@
 import { useState } from "react";
 import apiClient from "@/lib/axios";
+import { deleteQuestionMock, updateQuestionMock } from "@/lib/mockQnaApi";
 
 // 문의 수정 요청 타입
 export interface UpdateQuestionRequest {
@@ -16,6 +17,7 @@ interface ApiResponse<T> {
 }
 
 export const useMyQuestionActions = () => {
+  const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +30,9 @@ export const useMyQuestionActions = () => {
     setError(null);
 
     try {
+      if (DEMO_MODE) {
+        return updateQuestionMock(questionId, updateData);
+      }
       await apiClient.put<ApiResponse<unknown>>(
         `/api/my/questions/${questionId}`,
         updateData
@@ -52,6 +57,9 @@ export const useMyQuestionActions = () => {
     setError(null);
 
     try {
+      if (DEMO_MODE) {
+        return deleteQuestionMock(questionId);
+      }
       await apiClient.delete<ApiResponse<unknown>>(
         `/api/my/questions/${questionId}`
       );

@@ -7,6 +7,7 @@ import { useEscapeKey } from "../../../src/hooks/useEscapeKey";
 import Header from "@/components/common/Header";
 import { useToastContext } from "@/components/common/ToastProvider";
 import { useAuth as useAuthContext } from "@/contexts/AuthContext";
+import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 
 function LoginPageContent() {
   const searchParams = useSearchParams();
@@ -34,114 +35,52 @@ function LoginPageContent() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
     try {
-      // 로그인 API 호출
-      const response = await fetch("http://localhost:8080/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+      if (!isSupabaseConfigured || !supabase) {
+        showToast("Supabase 설정이 없어 게스트 모드를 사용해주세요.", "error");
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      if (response.ok) {
-        const data = await response.json();
-
-        // 토큰 저장
-        let accessToken = null;
-        if (data?.data?.token) {
-          accessToken = data.data.token;
-        }
-
-        // JWT 토큰에서 사용자 정보 추출
-        let userInfo = null;
-        if (accessToken) {
-          try {
-            const payload = accessToken.split(".")[1];
-            const decoded = JSON.parse(atob(payload));
-
-            // JWT에서 사용자 정보 추출
-            const userId = decoded.sub || decoded.userId || decoded.id;
-            const username = decoded.nickname || decoded.username || "사용자";
-            const userEmail = decoded.email || email;
-
-            userInfo = {
-              id: userId,
-              username: username,
-              email: userEmail,
-            };
-          } catch (tokenError) {
-            console.error("JWT 토큰 디코딩 실패:", tokenError);
-            // 토큰 디코딩 실패 시 API 응답에서 사용자 정보 확인
-            if (data?.data?.user) {
-              userInfo = {
-                id: data.data.user.id,
-                username: data.data.user.nickname || data.data.user.username,
-                email: data.data.user.email || email,
-              };
-            }
-          }
-        }
-
-        // API 응답에 사용자 정보가 있으면 우선 사용
-        if (data?.data?.user) {
-          userInfo = {
-            id: data.data.user.id || userInfo?.id,
-            username:
-              data.data.user.nickname ||
-              data.data.user.username ||
-              userInfo?.username,
-            email: data.data.user.email || userInfo?.email || email,
-          };
-        }
-
-        // 사용자 정보가 없으면 에러
-        if (!userInfo || !userInfo.id) {
-          console.error("사용자 정보를 가져올 수 없습니다:", data);
-          showToast("로그인 응답에서 사용자 정보를 찾을 수 없습니다.", "error");
-          return;
-        }
-
-        // AuthContext에도 로그인 반영 (헤더 업데이트용)
-        const refreshToken = data?.data?.refreshToken || "";
-        authLogin(accessToken as string, refreshToken, {
-          userId: userInfo.id,
-          email: userInfo.email,
-          nickname: userInfo.username,
-        });
-
-        // 사용자 역할에 따라 리다이렉트
-        const userRole =
-          email === "reum01060106@gmail.com"
-            ? "ADMIN"
-            : data?.data?.role || "USER";
-        if (userRole === "ADMIN") {
-          router.push("/admin");
-        } else {
-          router.push(redirectPath || "/");
-        }
-      } else {
-        let errorMessage = "이메일 또는 비밀번호가 일치하지 않습니다.";
-        try {
-          const errorData = await response.json();
-          if (errorData?.message) {
-            // 백엔드에서 "로그인 실패"만 오는 경우 더 구체적인 메시지로 변경
-            if (errorData.message === "로그인 실패") {
-              errorMessage = "이메일 또는 비밀번호가 일치하지 않습니다.";
-            } else {
-              errorMessage = errorData.message;
-            }
-          }
-        } catch (e) {
-          console.error("에러 응답 파싱 실패:", e);
-        }
-        showToast(errorMessage, "error");
+      if (error || !data.session || !data.user) {
+        showToast(error?.message || "이메일 또는 비밀번호가 일치하지 않습니다.", "error");
+        return;
       }
+
+      authLogin(data.session.access_token, data.session.refresh_token ?? "", {
+        userId: data.user.id,
+        email: data.user.email || email,
+        nickname:
+          (data.user.user_metadata?.nickname as string) ||
+          (data.user.user_metadata?.name as string) ||
+          "사용자",
+      });
+
+      router.push(redirectPath || "/");
     } catch (error) {
       console.error("로그인 오류:", error);
       showToast("로그인 중 오류가 발생했습니다.", "error");
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleGuestLogin = () => {
+    authLogin(`guest-token-${Date.now()}`, `guest-refresh-${Date.now()}`, {
+      userId: "guest-user",
+      email: "guest@cafeon.local",
+      nickname: "게스트",
+      name: "게스트 사용자",
+      profileImageUrl: null,
+    });
+    showToast("게스트 모드로 로그인했습니다.", "success");
+    router.push(redirectPath || "/");
   };
 
   const handlePasswordReset = () => {
@@ -268,6 +207,15 @@ function LoginPageContent() {
               className="w-full"
             >
               회원가입
+            </Button>
+            <Button
+              type="button"
+              color="gray"
+              size="md"
+              onClick={handleGuestLogin}
+              className="w-full"
+            >
+              게스트 모드로 시작
             </Button>
           </form>
         </div>

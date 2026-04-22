@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import apiClient from "@/lib/axios";
+import { getQuestionDetailMock } from "@/lib/mockQnaApi";
 
 // 문의 상세 응답 타입
 export interface MyQuestionDetailResponse {
@@ -21,6 +22,7 @@ interface ApiResponse<T> {
 }
 
 export const useMyQuestionDetail = (questionId: number | null) => {
+  const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   const [question, setQuestion] = useState<MyQuestionDetailResponse | null>(
     null
   );
@@ -37,6 +39,10 @@ export const useMyQuestionDetail = (questionId: number | null) => {
     setError(null);
 
     try {
+      if (DEMO_MODE) {
+        setQuestion(getQuestionDetailMock(questionId) as MyQuestionDetailResponse);
+        return;
+      }
       const response = await apiClient.get<
         ApiResponse<MyQuestionDetailResponse>
       >(`/api/my/questions/${questionId}`);

@@ -5,6 +5,7 @@ import {
   MyLikedPostsParams,
 } from "@/types/Post";
 import apiClient from "@/lib/axios";
+import { mockMyLikedPosts } from "@/data/mockUserActivity";
 
 export const useMyLikedPosts = (params: MyLikedPostsParams = {}) => {
   const [likedPosts, setLikedPosts] = useState<MyLikedPost[]>([]);
@@ -18,6 +19,16 @@ export const useMyLikedPosts = (params: MyLikedPostsParams = {}) => {
     setError(null);
 
     try {
+      if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
+        const page = fetchParams.page ?? 0;
+        const size = fetchParams.size ?? 10;
+        const start = page * size;
+        const content = mockMyLikedPosts.slice(start, start + size) as MyLikedPost[];
+        setLikedPosts(content);
+        setTotalElements(mockMyLikedPosts.length);
+        setTotalPages(Math.max(1, Math.ceil(mockMyLikedPosts.length / size)));
+        return;
+      }
       const response = await apiClient.get<MyLikedPostsResponse>(
         "/api/my/likes/posts",
         {

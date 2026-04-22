@@ -39,10 +39,13 @@ export const useStompConnection = ({
   onConnectedChange,
   scheduleReadLatest,
 }: UseStompConnectionProps): UseStompConnectionReturn => {
+  const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
   const stompClientRef = useRef<Client | null>(null);
   const messageSubscriptionRef = useRef<StompSubscription | null>(null);
   const readSubscriptionRef = useRef<StompSubscription | null>(null);
   const connectedRef = useRef<boolean>(false);
+  const demoRoomRef = useRef<string | null>(null);
+  const demoListenerRef = useRef<((event: Event) => void) | null>(null);
   const accessToken = useAuthStore((state) => state.accessToken);
 
   const setStompConnected = useCallback(
@@ -55,6 +58,10 @@ export const useStompConnection = ({
 
   // STOMP 클라이언트 연결
   const connectStomp = useCallback(async () => {
+    if (isDemoMode) {
+      setStompConnected(true);
+      return;
+    }
     if (stompClientRef.current?.connected) {
       return;
     }
@@ -93,11 +100,24 @@ export const useStompConnection = ({
       console.error("STOMP 연결 실패:", error);
       setStompConnected(false);
     }
-  }, [setStompConnected, accessToken]);
+  }, [setStompConnected, accessToken, isDemoMode]);
 
   // STOMP 구독
   const subscribeToRoom = useCallback(
     (targetRoomId: string) => {
+      if (isDemoMode) {
+        demoRoomRef.current = targetRoomId;
+        if (demoListenerRef.current) {
+          window.removeEventListener("demo-chat-message", demoListenerRef.current);
+        }
+        demoListenerRef.current = (event: Event) => {
+          const custom = event as CustomEvent;
+          if (custom.detail?.roomId !== targetRoomId) return;
+          onMessageReceived(custom.detail.message as any);
+        };
+        window.addEventListener("demo-chat-message", demoListenerRef.current);
+        return;
+      }
       if (!stompClientRef.current?.connected || !targetRoomId) return;
 
       // 현재 활성화된 roomId와 일치하는지 확인
@@ -174,11 +194,20 @@ export const useStompConnection = ({
         console.error("STOMP 구독 실패:", error);
       }
     },
-    [roomId, onMessageReceived, onReadReceiptReceived, scheduleReadLatest]
+    [roomId, onMessageReceived, onReadReceiptReceived, scheduleReadLatest, isDemoMode]
   );
 
   // STOMP 연결 해제
   const disconnectStomp = useCallback(() => {
+    if (isDemoMode) {
+      if (demoListenerRef.current) {
+        window.removeEventListener("demo-chat-message", demoListenerRef.current);
+        demoListenerRef.current = null;
+      }
+      demoRoomRef.current = null;
+      setStompConnected(false);
+      return;
+    }
     if (messageSubscriptionRef.current) {
       messageSubscriptionRef.current.unsubscribe();
       messageSubscriptionRef.current = null;
@@ -195,10 +224,32 @@ export const useStompConnection = ({
     }
 
     setStompConnected(false);
-  }, [setStompConnected]);
+  }, [setStompConnected, isDemoMode]);
 
   // 메시지 전송
   const sendMessage = useCallback((targetRoomId: string, content: string) => {
+    if (isDemoMode) {
+      if (!targetRoomId || !content.trim()) return;
+      window.dispatchEvent(
+        new CustomEvent("demo-chat-message", {
+          detail: {
+            roomId: targetRoomId,
+            message: {
+              chatId: Date.now(),
+              senderNickname: "게스트",
+              message: content,
+              mine: true,
+              messageType: "TEXT",
+              createdAt: new Date().toISOString(),
+              othersUnreadUsers: 0,
+              timeLabel: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
+              images: [],
+            },
+          },
+        })
+      );
+      return;
+    }
     if (
       !stompClientRef.current?.connected ||
       !targetRoomId ||
@@ -219,7 +270,7 @@ export const useStompConnection = ({
       console.error("메시지 전송 실패:", err);
       throw err;
     }
-  }, []);
+  }, [isDemoMode]);
 
   // 컴포넌트 언마운트 시 정리
   useEffect(() => {
@@ -230,8 +281,9 @@ export const useStompConnection = ({
 
   // 연결 상태 확인 함수
   const isConnected = useCallback(() => {
+    if (isDemoMode) return connectedRef.current;
     return Boolean(stompClientRef.current?.connected);
-  }, []);
+  }, [isDemoMode]);
 
   return {
     stompConnected: connectedRef.current,

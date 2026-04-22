@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import MapComponent from "@/components/map/Map";
-import { getWishlist, getNearbyCafes, getHotCafes } from "@/lib/api";
+import { getWishlist, getNearbyCafes, getHotCafes, getCafeDetail } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { getAccessToken } from "@/stores/authStore";
 
@@ -23,12 +23,24 @@ interface WishlistItem {
   category: string;
 }
 
+interface MapCafe {
+  cafe_id: string;
+  cafeId?: number | string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  photoUrl?: string | null;
+  images?: string[];
+}
+
 export default function MapPage() {
   const router = useRouter();
   const [selectedCafe, setSelectedCafe] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [savedCategory, setSavedCategory] = useState<SavedCategoryType>("all");
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
+  const [savedCafes, setSavedCafes] = useState<MapCafe[]>([]);
   const [loading, setLoading] = useState(false);
   const [nearbyCafes, setNearbyCafes] = useState<any[]>([]);
   const [popularCafes, setPopularCafes] = useState<any[]>([]);
@@ -115,15 +127,27 @@ export default function MapPage() {
         const cafesWithImages = cafes.filter(
           (cafe) => cafe.photoUrl || (cafe.images && cafe.images.length > 0)
         );
-        setNearbyCafes(cafesWithImages);
+        if (cafesWithImages.length > 0) {
+          setNearbyCafes(cafesWithImages);
+          return;
+        }
+      }
+
+      // 근처 데이터가 없으면 인기 카페로 fallback
+      const fallbackCafes = await getHotCafes();
+      if (Array.isArray(fallbackCafes)) {
+        setNearbyCafes(fallbackCafes.slice(0, 20));
       } else {
-        // 빈 배열 반환
         setNearbyCafes([]);
       }
     } catch (error: any) {
       console.error("근처 카페 조회 실패:", error);
-      // API 실패 시 빈 배열 반환
-      setNearbyCafes([]);
+      try {
+        const fallbackCafes = await getHotCafes();
+        setNearbyCafes(Array.isArray(fallbackCafes) ? fallbackCafes.slice(0, 20) : []);
+      } catch {
+        setNearbyCafes([]);
+      }
     }
   };
 
@@ -185,6 +209,7 @@ export default function MapPage() {
         const uniqueItems = Array.from(itemsMap.values());
 
         setWishlistItems(uniqueItems);
+        await hydrateSavedCafes(uniqueItems);
       } else {
         // 특정 카테고리 조회
         const params: any = {
@@ -196,6 +221,7 @@ export default function MapPage() {
         const response = await getWishlist(params);
         const items = response?.data?.content || response?.content || [];
         setWishlistItems(items);
+        await hydrateSavedCafes(items);
       }
     } catch (error: any) {
       console.error("위시리스트 조회 실패:", error);
@@ -207,29 +233,33 @@ export default function MapPage() {
       }
 
       setWishlistItems([]);
+      setSavedCafes([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // 저장 탭 카테고리별 데이터
-  const getSavedCafesByCategory = () => {
-    // 위시리스트가 있으면 위시리스트에서 가져오기
-    if (wishlistItems.length > 0) {
-      const categoryFilter =
-        savedCategory === "all"
-          ? wishlistItems
-          : wishlistItems.filter(
-              (item) => item.category === categoryMap[savedCategory]
-            );
-
-      // 위시리스트 카페를 매칭 (API에서 카페 정보를 가져와야 함)
-      // 현재는 위시리스트에 카페 정보가 포함되어 있지 않으므로 빈 배열 반환
-      return [];
+  const hydrateSavedCafes = async (items: WishlistItem[]) => {
+    if (!Array.isArray(items) || items.length === 0) {
+      setSavedCafes([]);
+      return;
     }
 
-    // 위시리스트가 없으면 빈 배열
-    return [];
+    const cafes = await Promise.all(
+      items.map(async (item) => {
+        try {
+          const detail = (await getCafeDetail(String(item.cafeId))) as any;
+          return {
+            ...detail,
+            cafe_id: String(detail.cafe_id || detail.cafeId || item.cafeId),
+            cafeId: detail.cafeId || detail.cafe_id || item.cafeId,
+          } as MapCafe;
+        } catch {
+          return null;
+        }
+      })
+    );
+    setSavedCafes(cafes.filter(Boolean) as MapCafe[]);
   };
 
   // 탭별 카페 데이터
@@ -238,7 +268,7 @@ export default function MapPage() {
       case "home":
         return nearbyCafes; // API 데이터
       case "saved":
-        return []; // 저장된 카페는 위시리스트 API에서 가져옴
+        return savedCafes;
       case "popular":
         return popularCafes; // 인기 카페 API 데이터
       default:
@@ -482,9 +512,9 @@ export default function MapPage() {
 
                 return (
                   <div
-                    key={cafe.cafe_id}
+                    key={String(cafe.cafe_id || cafe.cafeId || cafe.name)}
                     className={`p-2 sm:p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedCafe === cafe.cafe_id
+                      selectedCafe === String(cafe.cafe_id || cafe.cafeId)
                         ? "border-amber-300 bg-amber-50"
                         : "border-gray-200 hover:border-gray-300"
                     }`}

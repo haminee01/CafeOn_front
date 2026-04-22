@@ -3,8 +3,10 @@ import { getRefreshToken, useAuthStore } from "@/stores/authStore";
 import { useChatPreferencesStore } from "@/stores/chatPreferencesStore";
 import { normalizeError } from "@/utils/errorHandler";
 import apiClient from "@/lib/axios";
+import { demoHistory, demoJoinRoom, demoParticipants } from "@/lib/mockChatApi";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 // 채팅방 참여 응답 타입
 export interface NotificationResponse {
@@ -112,6 +114,7 @@ export interface ChatRoomInfo {
 export const getChatRoomIdByCafeId = async (
   cafeId: string
 ): Promise<{ roomId: string }> => {
+  if (DEMO_MODE) return { roomId: String(Number(cafeId) + 100) };
   try {
     const response = await apiClient.get(`/api/chat/rooms/cafe/${cafeId}`);
     return response.data;
@@ -163,6 +166,7 @@ export const joinCafeGroupChat = async (
   cafeId: string,
   retryCount = 0
 ): Promise<ChatRoomJoinResponse> => {
+  if (DEMO_MODE) return demoJoinRoom(cafeId) as ChatRoomJoinResponse;
   // 중복 요청 방지
   const requestKey = `${cafeId}-${retryCount}`;
   const existingRequest = pendingRequests.get(requestKey);
@@ -286,6 +290,7 @@ export const joinCafeGroupChat = async (
 export const getChatParticipants = async (
   roomId: string
 ): Promise<ChatParticipant[]> => {
+  if (DEMO_MODE) return demoParticipants();
   try {
     const response = await apiClient.get(`/api/chat/rooms/${roomId}/members`);
     return response.data?.data || response.data || [];
@@ -310,6 +315,7 @@ export const getChatParticipants = async (
 export const getUnreadNotifications = async (): Promise<
   NotificationResponse[]
 > => {
+  if (DEMO_MODE) return [];
   try {
     const token = useAuthStore.getState().accessToken;
 
@@ -416,6 +422,16 @@ export const sendChatMessage = async (
   content: string,
   retryCount = 0
 ): Promise<ChatMessageResponse> => {
+  if (DEMO_MODE) {
+    return {
+      messageId: `${Date.now()}`,
+      senderId: "guest-user",
+      senderName: "게스트",
+      content,
+      timestamp: new Date().toISOString(),
+      isMyMessage: true,
+    };
+  }
   try {
     const response = await apiClient.post(
       `/api/chat/rooms/${roomId}/messages`,
@@ -456,6 +472,16 @@ export const sendChatMessage = async (
 export const getChatMessages = async (
   roomId: string
 ): Promise<ChatMessageResponse[]> => {
+  if (DEMO_MODE) {
+    return demoHistory(roomId, undefined, 30).data.content.map((m) => ({
+      messageId: String(m.chatId),
+      senderId: m.senderNickname,
+      senderName: m.senderNickname,
+      content: m.message,
+      timestamp: m.createdAt,
+      isMyMessage: m.mine,
+    }));
+  }
   try {
     const response = await apiClient.get(`/api/chat/rooms/${roomId}/messages`);
     return response.data;
@@ -488,6 +514,7 @@ export const getChatHistory = async (
   size: number = 50,
   includeSystem: boolean = true
 ): Promise<ChatHistoryResponse> => {
+  if (DEMO_MODE) return demoHistory(roomId, beforeId, size) as ChatHistoryResponse;
   try {
     const token = useAuthStore.getState().accessToken;
 
@@ -576,6 +603,20 @@ export const patchRead = async (
 export const createDmChat = async (
   counterpartId: string
 ): Promise<DmChatJoinResponse> => {
+  if (DEMO_MODE) {
+    return {
+      message: "ok",
+      data: {
+        userId: "guest-user",
+        memberId: 1,
+        roomId: Number(counterpartId.replace(/\D/g, "") || "201"),
+        type: "PRIVATE",
+        muted: false,
+        joinedAt: new Date().toISOString(),
+        alreadyJoined: true,
+      },
+    };
+  }
   try {
     const response = await apiClient.post(
       `/api/chat/rooms/dm/join`,
@@ -641,6 +682,7 @@ export const createDmChat = async (
  * DELETE /api/chat/rooms/{roomId}/members/me/leave
  */
 export const leaveChatRoomNew = async (roomId: string): Promise<void> => {
+  if (DEMO_MODE) return;
   try {
     await apiClient.delete(`/api/chat/rooms/${roomId}/members/me/leave`);
   } catch (error: any) {
@@ -663,6 +705,7 @@ export const toggleChatMute = async (
   roomId: string,
   muted: boolean
 ): Promise<void> => {
+  if (DEMO_MODE) return;
   try {
     await apiClient.patch(`/api/chat/rooms/${roomId}/members/me/mute`, {
       muted,
@@ -685,6 +728,7 @@ export const toggleChatMute = async (
  * POST /api/chat/rooms/{roomId}/members/me/read-latest
  */
 export const readLatest = async (roomId: string): Promise<void> => {
+  if (DEMO_MODE) return;
   try {
     await apiClient.post(`/api/chat/rooms/${roomId}/members/me/read-latest`);
   } catch (error: any) {

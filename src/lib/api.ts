@@ -1,6 +1,8 @@
 import apiClient from "./axios";
 import { normalizeError as normalizeErrorUtil } from "@/utils/errorHandler";
+import * as mockApi from "@/lib/mockApi";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 // API 에러를 표준화하여 throw (source 자동 추가)
 function normalizeError(error: unknown, context?: Record<string, unknown>) {
@@ -60,6 +62,9 @@ export async function signup(userData: {
   nickname: string;
   phone: string;
 }) {
+  if (DEMO_MODE) {
+    return { message: "회원가입이 완료되었습니다.", data: { userId: `demo-${Date.now()}` } };
+  }
   try {
     const response = await apiClient.post("/api/auth/signup", userData);
     return response.data;
@@ -73,6 +78,20 @@ export async function signup(userData: {
 
 // 로그인
 export async function login(credentials: { email: string; password: string }) {
+  if (DEMO_MODE) {
+    return {
+      message: "로그인 성공",
+      data: {
+        token: `demo-token-${Date.now()}`,
+        refreshToken: `demo-refresh-${Date.now()}`,
+        user: {
+          id: "demo-user",
+          email: credentials.email,
+          nickname: credentials.email.split("@")[0] || "사용자",
+        },
+      },
+    };
+  }
   try {
     const response = await apiClient.post("/api/auth/login", credentials);
     return response.data;
@@ -112,6 +131,9 @@ export async function getAllCafes() {
 
 // 카페 검색
 export async function searchCafes(query?: string, tags?: string | string[]) {
+  if (DEMO_MODE) {
+    return mockApi.searchCafesMock(query, tags).map(convertCafeResponseToCafe);
+  }
   try {
     // 백엔드에 query와 tags 파라미터 전달 (명세서에 따라 tags 복수형 사용)
     const params: Record<string, string | string[]> = {};
@@ -140,6 +162,9 @@ export async function searchCafes(query?: string, tags?: string | string[]) {
 
 // 카페 상세 정보 조회
 export async function getCafeDetail(cafeId: string) {
+  if (DEMO_MODE) {
+    return convertCafeResponseToCafe(mockApi.getCafeById(cafeId));
+  }
   try {
     const response = await apiClient.get(`/api/cafes/${cafeId}`);
     return response.data;
@@ -154,6 +179,11 @@ export async function getNearbyCafes(params: {
   longitude: number;
   radius?: number;
 }) {
+  if (DEMO_MODE) {
+    return mockApi
+      .getNearbyCafesMock(params.latitude, params.longitude, params.radius)
+      .map(convertCafeResponseToCafe);
+  }
   try {
     // 근처 카페 조회는 시간이 걸릴 수 있으므로 타임아웃을 더 길게 설정
     const response = await apiClient.get("/api/cafes/nearby", {
@@ -250,6 +280,9 @@ function convertCafeResponseToCafe(cafe: CafeApiResponse): CafeSummary {
 
 // 랜덤 카페 10개 조회
 export async function getRandomCafes() {
+  if (DEMO_MODE) {
+    return mockApi.getRandomCafesMock(10).map(convertCafeResponseToCafe);
+  }
   try {
     const response = await apiClient.get("/api/cafes/random10");
 
@@ -276,6 +309,9 @@ export async function getRandomCafes() {
 
 // 요즘 뜨고 있는 카페 top10 조회
 export async function getHotCafes() {
+  if (DEMO_MODE) {
+    return mockApi.getHotCafesMock(10).map(convertCafeResponseToCafe);
+  }
   try {
     const response = await apiClient.get("/api/cafes/hot10");
 
@@ -302,6 +338,9 @@ export async function getHotCafes() {
 
 // 찜 많은 카페 top10 조회
 export async function getWishlistTopCafes() {
+  if (DEMO_MODE) {
+    return mockApi.getWishlistTopCafesMock(10).map(convertCafeResponseToCafe);
+  }
   try {
     const response = await apiClient.get("/api/cafes/wish10");
 
@@ -321,6 +360,9 @@ export async function getWishlistTopCafes() {
 // 관련 카페 10개 조회
 // 백엔드 API가 아직 구현되지 않은 경우를 대비한 임시 처리
 export async function getRelatedCafes(cafeId: string) {
+  if (DEMO_MODE) {
+    return mockApi.getRelatedCafesMock(cafeId).map(convertCafeResponseToCafe);
+  }
   try {
     const response = await apiClient.get("/api/cafes/related10", {
       params: {
@@ -350,6 +392,9 @@ export async function getRelatedCafes(cafeId: string) {
 
 // 카페별 리뷰 목록 조회
 export async function getCafeReviews(cafeId: string) {
+  if (DEMO_MODE) {
+    return mockApi.getCafeReviewsMock(cafeId);
+  }
   try {
     const response = await apiClient.get(`/api/cafes/${cafeId}/reviews`);
     return response.data || { reviews: [], count: 0 };
@@ -448,6 +493,9 @@ export async function updateReview(
 
 // 리뷰 삭제
 export async function deleteReview(reviewId: string) {
+  if (DEMO_MODE) {
+    return mockApi.deleteReviewMock(reviewId);
+  }
   try {
     const response = await apiClient.delete(`/api/reviews/${reviewId}`);
     return response.data;
@@ -493,6 +541,9 @@ export async function getWishlist(params?: {
   category?: string;
   sort?: string;
 }) {
+  if (DEMO_MODE) {
+    return { data: mockApi.getWishlistMock(params) };
+  }
   try {
     // 백엔드가 category를 필수로 요구하므로, category가 없으면 빈 결과 반환
     if (!params?.category) {
@@ -519,6 +570,9 @@ export async function getWishlist(params?: {
 
 // 특정 카페의 위시리스트 카테고리 조회
 export async function getWishlistCategories(cafeId: string) {
+  if (DEMO_MODE) {
+    return mockApi.getWishlistCategoriesMock(cafeId);
+  }
   try {
     const response = await apiClient.get(`/api/my/wishlist/${cafeId}`);
     return response.data;
@@ -532,6 +586,9 @@ export async function getWishlistCategories(cafeId: string) {
 
 // 위시리스트 추가/제거 (토글)
 export async function toggleWishlist(cafeId: string, category: string) {
+  if (DEMO_MODE) {
+    return mockApi.toggleWishlistMock(cafeId, category);
+  }
   try {
     const response = await apiClient.post(
       `/api/my/wishlist/${cafeId}?category=${category}`,
@@ -684,6 +741,9 @@ export async function updateAdminReport(id: number, data: { status: string }) {
 
 // 회원 정보 조회
 export async function getUserProfile() {
+  if (DEMO_MODE) {
+    return { data: mockApi.getProfileMock() };
+  }
   try {
     const response = await apiClient.get("/api/users/me");
     return response.data;
@@ -696,6 +756,9 @@ export async function getUserProfile() {
 
 // 회원 정보 수정 (닉네임)
 export async function updateUserProfile(nickname: string) {
+  if (DEMO_MODE) {
+    return { data: mockApi.updateProfileMock(nickname) };
+  }
   try {
     const response = await apiClient.put("/api/users/me", { nickname });
     return response.data;
@@ -708,6 +771,15 @@ export async function updateUserProfile(nickname: string) {
 
 // 프로필 이미지 변경
 export async function updateProfileImage(file: File) {
+  if (DEMO_MODE) {
+    const imageUrl = URL.createObjectURL(file);
+    return {
+      data: {
+        ...mockApi.getProfileMock(),
+        profileImageUrl: imageUrl,
+      },
+    };
+  }
   try {
     const formData = new FormData();
     formData.append("file", file);
@@ -731,6 +803,9 @@ export async function updateProfileImage(file: File) {
 
 // 회원 탈퇴
 export async function deleteUser() {
+  if (DEMO_MODE) {
+    return { message: "회원 탈퇴가 완료되었습니다." };
+  }
   try {
     const response = await apiClient.delete("/api/users/me");
     return response.data;
@@ -747,6 +822,9 @@ export async function changePassword(passwordData: {
   newPassword: string;
   confirmPassword: string;
 }) {
+  if (DEMO_MODE) {
+    return { message: "비밀번호가 변경되었습니다." };
+  }
   try {
     const response = await apiClient.put(
       "/api/users/me/password",
@@ -860,6 +938,9 @@ export interface WishlistResponse {
 
 // 위시리스트 제거 (DELETE)
 export async function deleteWishlist(cafeId: number, category: string) {
+  if (DEMO_MODE) {
+    return mockApi.deleteWishlistMock(cafeId, category);
+  }
   try {
     const response = await apiClient.delete(`/api/my/wishlist/${cafeId}`, {
       params: { category },
@@ -875,6 +956,9 @@ export async function deleteWishlist(cafeId: number, category: string) {
 
 // 내 채팅방 목록 조회
 export async function getMyChatRooms() {
+  if (DEMO_MODE) {
+    return mockApi.getMyChatRoomsMock();
+  }
   try {
     const response = await apiClient.get("/api/my/chat/rooms");
     return response.data;
@@ -886,6 +970,9 @@ export async function getMyChatRooms() {
 
 // 채팅 읽음 처리
 export async function markChatAsRead(roomId: string, lastReadChatId: string) {
+  if (DEMO_MODE) {
+    return mockApi.markChatAsReadMock(roomId, lastReadChatId);
+  }
   try {
     const response = await apiClient.post(
       `/api/chat/rooms/${roomId}/members/me/read-latest`,
@@ -906,6 +993,9 @@ export async function markChatAsRead(roomId: string, lastReadChatId: string) {
 
 // 사용자의 읽지 않은 채팅 목록 조회
 export async function getNotificationsUnread() {
+  if (DEMO_MODE) {
+    return mockApi.getNotificationsUnreadMock();
+  }
   try {
     const response = await apiClient.get("/api/notifications/unread");
     return response.data;
@@ -917,6 +1007,12 @@ export async function getNotificationsUnread() {
 
 // 채팅방 메시지 목록 조회 (othersUnreadUsers 포함)
 export async function getChatMessagesWithUnreadCount(roomId: string) {
+  if (DEMO_MODE) {
+    if (!roomId || roomId === "undefined" || roomId === "null") {
+      throw new Error("유효하지 않은 roomId입니다.");
+    }
+    return mockApi.getChatMessagesWithUnreadCountMock(roomId);
+  }
   try {
     if (!roomId || roomId === "undefined" || roomId === "null") {
       throw new Error("유효하지 않은 roomId입니다.");
@@ -1078,6 +1174,9 @@ export async function getMyReviews(params?: {
   page?: number;
   size?: number;
 }): Promise<MyReviewsResponse> {
+  if (DEMO_MODE) {
+    return mockApi.getMyReviewsMock(params) as MyReviewsResponse;
+  }
   try {
     const response = await apiClient.get("/api/my/reviews", {
       params: {

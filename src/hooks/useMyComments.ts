@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { MyComment, MyCommentsResponse, MyCommentsParams } from "@/types/Post";
 import apiClient from "@/lib/axios";
+import { mockMyComments } from "@/data/mockUserActivity";
 
 export const useMyComments = (params: MyCommentsParams = {}) => {
   const [comments, setComments] = useState<MyComment[]>([]);
@@ -14,6 +15,16 @@ export const useMyComments = (params: MyCommentsParams = {}) => {
     setError(null);
 
     try {
+      if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
+        const page = fetchParams.page ?? 0;
+        const size = fetchParams.size ?? 10;
+        const start = page * size;
+        const content = mockMyComments.slice(start, start + size) as unknown as MyComment[];
+        setComments(content);
+        setTotalElements(mockMyComments.length);
+        setTotalPages(Math.max(1, Math.ceil(mockMyComments.length / size)));
+        return;
+      }
       const response = await apiClient.get<MyCommentsResponse>(
         "/api/my/comments",
         {

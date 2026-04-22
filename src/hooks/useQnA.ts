@@ -11,6 +11,13 @@ import {
   Answer,
 } from "@/types/qna";
 import apiClient from "@/lib/axios";
+import {
+  getQuestionListMock,
+  getQuestionDetailMock,
+  createQuestionMock,
+  getAnswerListMock,
+} from "@/lib/mockQnaApi";
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 // 문의 목록 조회 훅
 export const useQuestionList = (params: QuestionListParams) => {
@@ -25,6 +32,28 @@ export const useQuestionList = (params: QuestionListParams) => {
     setError(null);
 
     try {
+      if (DEMO_MODE) {
+        const data = getQuestionListMock({
+          page: params.page,
+          size: params.size,
+          keyword: params.keyword,
+        });
+        const maskedQuestions = data.content.map((question) => ({
+          ...question,
+          title:
+            question.visibility === QuestionVisibility.PRIVATE
+              ? "비공개 문의"
+              : question.title,
+          authorNickname:
+            question.visibility === QuestionVisibility.PRIVATE
+              ? "***"
+              : question.authorNickname,
+        }));
+        setQuestions(maskedQuestions);
+        setTotalPages(data.totalPages);
+        setTotalElements(data.totalElements);
+        return;
+      }
       const response = await apiClient.get<ApiResponse<QuestionListResponse>>(
         "/api/qna/questions",
         {
@@ -91,6 +120,10 @@ export const useQuestionDetail = (id: number) => {
     setError(null);
 
     try {
+      if (DEMO_MODE) {
+        setQuestion(getQuestionDetailMock(id));
+        return;
+      }
       const response = await apiClient.get<ApiResponse<QuestionDetail>>(
         `/api/qna/questions/${id}`
       );
@@ -128,6 +161,9 @@ export const useCreateQuestion = () => {
     setError(null);
 
     try {
+      if (DEMO_MODE) {
+        return createQuestionMock(data);
+      }
       const response = await apiClient.post<
         ApiResponse<CreateQuestionResponse>
       >("/api/qna/questions", data);
@@ -162,6 +198,10 @@ export const useAnswerList = (questionId: number) => {
     setError(null);
 
     try {
+      if (DEMO_MODE) {
+        setAnswers(getAnswerListMock(questionId));
+        return;
+      }
       const response = await apiClient.get<ApiResponse<Answer[]>>(
         `/api/qna/questions/${questionId}/answers`
       );
