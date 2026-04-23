@@ -43,17 +43,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       {/* 상단 헤더 - 로그인/로그아웃만 */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-200/70">
         <div className="content-container py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <h1 className="text-xl sm:text-2xl font-bold text-primary">CafeOn.</h1>
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-primary">
+                CafeOn.
+              </h1>
             </div>
             <button
               onClick={handleLogout}
-              className="text-gray-600 hover:text-gray-900 text-base"
+              className="text-text-muted hover:text-primary text-base font-medium"
             >
               로그아웃
             </button>
@@ -64,7 +66,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <div className="flex">
         {/* 사이드바 */}
         <aside
-          className={`bg-white shadow-sm h-screen w-64 fixed left-0 top-16 transform transition-transform duration-300 z-30 ${
+          className={`bg-white border-r border-gray-200/70 shadow-sm h-screen w-64 fixed left-0 top-16 transform transition-transform duration-300 z-30 ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           } lg:translate-x-0`}
         >
@@ -76,8 +78,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   href={item.href}
                   className={`flex items-center px-4 py-3 rounded-lg text-md font-medium transition-colors ${
                     pathname === item.href
-                      ? "text-primary font-bold"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                      ? "text-primary bg-primary/5 font-semibold"
+                      : "text-text-muted hover:bg-gray-100 hover:text-text-primary"
                   }`}
                 >
                   <span className="mr-3 text-lg">{item.icon}</span>
@@ -104,7 +106,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* 모바일 메뉴 버튼 */}
       <button
-        className="fixed top-4 left-4 z-40 lg:hidden bg-white p-2 rounded-md shadow-md"
+        className="fixed top-4 left-4 z-40 lg:hidden bg-white p-2 rounded-md shadow-md border border-gray-200"
         onClick={() => setSidebarOpen(!sidebarOpen)}
       >
         <svg

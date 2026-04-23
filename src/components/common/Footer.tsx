@@ -11,13 +11,15 @@ const Footer = () => {
   ];
 
   return (
-    <footer>
+    <footer className="border-t border-gray-200/70 bg-white/70">
       <div className="content-container py-6 sm:py-8">
-        <div className="border-b border-gray-50 mb-6 sm:mb-12"></div>
+        <div className="border-b border-gray-200/60 mb-6 sm:mb-10"></div>
 
         <div className="flex flex-col sm:flex-row justify-between items-start gap-4 sm:gap-0">
           <div className="flex flex-col">
-            <h3 className="text-sm sm:text-md font-bold mb-3 sm:mb-6">Team</h3>
+            <h3 className="text-sm sm:text-base font-semibold text-text-primary mb-3 sm:mb-5">
+              Team
+            </h3>
             <div className="flex flex-wrap gap-x-4 sm:gap-x-6 gap-y-2 sm:gap-y-3">
               {teamMembers.map((member, index) => (
                 <Link
@@ -25,7 +27,7 @@ const Footer = () => {
                   href={member.github}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs sm:text-sm text-gray-400"
+                  className="text-xs sm:text-sm text-text-muted hover:text-primary"
                 >
                   {member.name}
                 </Link>
@@ -38,7 +40,7 @@ const Footer = () => {
               href="https://github.com/b1a4-CafeOn-final"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-black rounded-full"
+              className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 bg-text-primary rounded-full hover:scale-105"
             >
               <FaGithub className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </Link>

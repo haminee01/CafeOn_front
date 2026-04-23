@@ -167,7 +167,23 @@ export const getCafeById = (cafeId: string) => {
   const enrichCafe = (cafe: any) => {
     const base = CAFE_IMAGE_POOL[Number(cafe.cafe_id) % CAFE_IMAGE_POOL.length];
     const images = [base, CAFE_IMAGE_POOL[(Number(cafe.cafe_id) + 1) % CAFE_IMAGE_POOL.length]];
-    return { ...cafe, photoUrl: base, imageUrl: base, images };
+    const reviewPool = ensureDemoReviews().filter(
+      (item: any) => String(item.cafeId) === String(cafe.cafe_id)
+    );
+
+    return {
+      ...cafe,
+      photoUrl: base,
+      imageUrl: base,
+      images,
+      // 카페 상세 API 형식에 맞춰 리뷰를 포함해 상세 페이지에서 바로 노출되게 함
+      reviews: reviewPool,
+      reviewCount: reviewPool.length,
+      reviewsSummary:
+        reviewPool.length > 0
+          ? `${reviewPool.length}개의 리뷰가 등록되어 있습니다.`
+          : "아직 등록된 리뷰가 없습니다.",
+    };
   };
   return (
     enrichCafe(

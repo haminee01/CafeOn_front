@@ -4,7 +4,7 @@ import {
   lastOrderTimes,
   closedDaysMap,
   specialCafeInfo,
-  specialReviews,
+  specialReviewSets,
   similarCafesMap,
   defaultReviews,
   defaultImages,
@@ -53,27 +53,17 @@ export function getSpecialInfo(cafeId: string) {
 
 // 카페별 리뷰 생성
 export function getCafeReviews(cafe: Cafe): CafeReview[] {
-  const specialReview = specialReviews[cafe.cafe_id];
+  const cafeSpecificReviews = specialReviewSets[cafe.cafe_id] ?? [];
+  const normalizedSpecific = cafeSpecificReviews.map((review, index) => ({
+    ...review,
+    id: index + 1,
+  }));
+  const normalizedDefault = defaultReviews.map((review, index) => ({
+    ...review,
+    id: normalizedSpecific.length + index + 1,
+  }));
 
-  // 특별 리뷰가 있는 경우에만 첫 번째 리뷰 생성
-  if (specialReview) {
-    const firstReview: CafeReview = {
-      id: 1,
-      user: "미운오리9214",
-      content: specialReview,
-      date: "2024.01.15",
-      likes: 12,
-      images: [
-        "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=300&h=300&fit=crop&crop=center",
-        "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=300&h=300&fit=crop&crop=center",
-        "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=300&h=300&fit=crop&crop=center",
-      ],
-    };
-    return [firstReview, ...defaultReviews];
-  }
-
-  // 특별 리뷰가 없는 경우 기본 리뷰만 반환
-  return defaultReviews;
+  return [...normalizedSpecific, ...normalizedDefault];
 }
 
 // 유사 카페 목록 가져오기

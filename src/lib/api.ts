@@ -38,6 +38,9 @@ interface CafeApiResponse {
   imageUrl?: string | null;
   image_url?: string | null;
   images?: string[];
+  reviews?: any[];
+  reviewCount?: number;
+  reviewsSummary?: string;
 }
 
 export interface CafeSummary {
@@ -55,6 +58,9 @@ export interface CafeSummary {
   tags: string[];
   photoUrl: string | null;
   images: string[];
+  reviews?: any[];
+  reviewCount?: number;
+  reviewsSummary?: string;
 }
 
 // ==================== Auth API ====================
@@ -280,6 +286,9 @@ function convertCafeResponseToCafe(cafe: CafeApiResponse): CafeSummary {
       cafe.image_url ||
       null,
     images: cafe.images || (cafe.photoUrl ? [cafe.photoUrl] : []) || [],
+    reviews: Array.isArray(cafe.reviews) ? cafe.reviews : [],
+    reviewCount: typeof cafe.reviewCount === "number" ? cafe.reviewCount : 0,
+    reviewsSummary: cafe.reviewsSummary || "",
   };
 }
 

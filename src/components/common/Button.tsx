@@ -24,15 +24,18 @@ const Button: React.FC<ButtonProps> = ({
   };
 
   const colorClasses = {
-    primary: "bg-primary text-white",
-    secondary: "bg-secondary text-white",
-    gray: "bg-gray-100 text-gray-700 hover:bg-gray-200",
-    warning: "bg-warning text-white",
+    primary:
+      "bg-primary text-white hover:bg-[#4f3a29] focus-visible:ring-primary/30",
+    secondary:
+      "bg-secondary text-white hover:bg-[#a98a69] focus-visible:ring-secondary/30",
+    gray: "bg-white text-text-primary border border-gray-300 hover:bg-gray-50 focus-visible:ring-gray-300",
+    warning:
+      "bg-warning text-white hover:bg-[#c63f3f] focus-visible:ring-warning/30",
   };
 
   const baseClasses =
-    "rounded-lg font-medium leading-none transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2";
-  const disabledClasses = "opacity-50 cursor-not-allowed";
+    "rounded-xl font-medium leading-none tracking-tight transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 shadow-sm hover:shadow";
+  const disabledClasses = "opacity-50 cursor-not-allowed hover:shadow-sm";
 
   return (
     <button

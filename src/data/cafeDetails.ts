@@ -125,9 +125,131 @@ export const specialCafeInfo: {
   },
 };
 
-// 카페별 특별 리뷰
-export const specialReviews: { [key: string]: string } = {
-  "33": "동네 맛집이라고 해서 하트 눌러놨는데 드디어 와봤습니다. 일단 인테리어부터 엄청 낭만있고, 2층에는 히든 공간이 있어요, 디저트 종류가 정말 다양하고 맛도 좋아요. 특히 딥 더티 초콜릿은 진짜 비주얼이 끝내주네요! 초코 음료랑 상큼한 치즈케이크 같이 먹으니까 완전 극락이었어요. 친구들이랑 또 가고 싶은 곳이에요!",
+// 카페별 특별 리뷰 세트
+export const specialReviewSets: {
+  [key: string]: Omit<CafeReview, "id">[];
+} = {
+  "1": [
+    {
+      user: "강남직장인A",
+      content:
+        "출근 전에 들르기 좋아요. 테이블 간격이 넓어서 노트북 펼치기 편하고 와이파이도 안정적이었습니다.",
+      date: "2026.04.18",
+      likes: 14,
+      rating: 4.5,
+      images: [
+        "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=300&h=300&fit=crop&crop=center",
+      ],
+    },
+  ],
+  "5": [
+    {
+      user: "홍대산책러",
+      content:
+        "저녁 시간에도 좌석 회전이 빨라서 생각보다 오래 기다리지 않았어요. 음료 밸런스도 무난해서 재방문 의사 있습니다.",
+      date: "2026.04.16",
+      likes: 11,
+      rating: 4.3,
+      images: [
+        "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300&h=300&fit=crop&crop=center",
+      ],
+    },
+  ],
+  "10": [
+    {
+      user: "주말여행자",
+      content:
+        "인사동 산책하다 들렀는데 창가 자리가 특히 좋았어요. 외국인 손님도 많아서 활기 있는 분위기였습니다.",
+      date: "2026.04.12",
+      likes: 9,
+      rating: 4.4,
+    },
+  ],
+  "15": [
+    {
+      user: "잠실러버",
+      content:
+        "주말에 사람은 많지만 직원 응대가 빨라서 괜찮았어요. 디카페인 옵션이 있어서 늦은 시간에도 부담 없이 마셨습니다.",
+      date: "2026.04.09",
+      likes: 8,
+      rating: 4.2,
+    },
+  ],
+  "33": [
+    {
+      user: "미운오리9214",
+      content:
+        "동네 맛집이라고 해서 저장해뒀다가 방문했어요. 2층 좌석이 생각보다 넓고, 디저트 라인업이 자주 바뀌어서 갈 때마다 새롭습니다.",
+      date: "2026.04.20",
+      likes: 21,
+      rating: 4.8,
+      images: [
+        "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=300&h=300&fit=crop&crop=center",
+        "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=300&h=300&fit=crop&crop=center",
+      ],
+    },
+    {
+      user: "디저트덕후92",
+      content:
+        "딥 초콜릿 케이크가 정말 진해서 아메리카노랑 궁합이 좋았어요. 사진 찍기 좋은 코너도 많고 조명이 예쁩니다.",
+      date: "2026.04.14",
+      likes: 17,
+      rating: 4.7,
+    },
+  ],
+  "40": [
+    {
+      user: "성수카공러",
+      content:
+        "공간이 트여 있어서 답답하지 않고 콘센트 위치도 좋아요. 오전 시간대가 비교적 조용해서 작업하기 좋았습니다.",
+      date: "2026.04.11",
+      likes: 13,
+      rating: 4.6,
+    },
+  ],
+  "45": [
+    {
+      user: "한강데이트중",
+      content:
+        "창가에서 한강 보이는 뷰가 정말 좋아요. 해 질 무렵 방문하면 분위기가 훨씬 살아납니다.",
+      date: "2026.04.17",
+      likes: 19,
+      rating: 4.9,
+      images: [
+        "https://images.unsplash.com/photo-1445116572660-236099ec97a0?w=300&h=300&fit=crop&crop=center",
+      ],
+    },
+  ],
+  "50": [
+    {
+      user: "야경좋아함",
+      content:
+        "남산 야경 보고 내려와서 들렀는데 데이트 코스로 딱이에요. 좌석이 편하고 음악 볼륨도 적당했습니다.",
+      date: "2026.04.08",
+      likes: 16,
+      rating: 4.8,
+    },
+  ],
+  "58": [
+    {
+      user: "포토러버",
+      content:
+        "내부 포토존이 과하지 않고 세련되게 구성돼 있어요. 음료 비주얼도 예뻐서 사진 찍기 좋았습니다.",
+      date: "2026.04.13",
+      likes: 15,
+      rating: 4.7,
+    },
+  ],
+  "59": [
+    {
+      user: "일몰헌터",
+      content:
+        "주말 오후 일몰 시간대에 방문했는데 풍경이 정말 좋았습니다. 매장 회전도 빨라서 대기 시간이 길지 않았어요.",
+      date: "2026.04.10",
+      likes: 18,
+      rating: 4.9,
+    },
+  ],
 };
 
 // 유사 카페 매핑
@@ -1037,37 +1159,66 @@ export const similarCafesMap: { [key: string]: string[] } = {
 // 공통 리뷰 데이터
 export const defaultReviews: CafeReview[] = [
   {
-    id: 2,
+    id: 1,
     user: "카페러버123",
     content:
-      "분위기가 정말 좋아요! 조용하고 아늑해서 혼자 와도 좋고 친구들이랑 와도 좋을 것 같아요.",
-    date: "2024.01.10",
-    likes: 8,
+      "분위기가 차분해서 대화하기 좋았어요. 테이블 간 간격이 넉넉해서 답답하지 않았습니다.",
+    date: "2026.04.07",
+    likes: 12,
+    rating: 4.4,
+    reviewerId: "reviewer-101",
+    profileImageUrl:
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&h=120&fit=crop&crop=face",
     images: [
-      "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=300&h=300&fit=crop&crop=center",
+      "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=300&h=300&fit=crop&crop=center",
+    ],
+  },
+  {
+    id: 2,
+    user: "디저트러버",
+    content:
+      "디저트 퀄리티가 기대 이상이었어요. 너무 달기만 하지 않고 커피와 밸런스가 좋아서 만족했습니다.",
+    date: "2026.04.05",
+    likes: 9,
+    rating: 4.6,
+    reviewerId: "reviewer-102",
+    profileImageUrl:
+      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&h=120&fit=crop&crop=face",
+    images: [
+      "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=300&h=300&fit=crop&crop=center",
     ],
   },
   {
     id: 3,
-    user: "디저트러버",
+    user: "커피마니아",
     content:
-      "디저트가 정말 맛있어요! 특히 케이크가 부드럽고 달콤해서 좋았습니다. 다음에도 또 오고 싶어요.",
-    date: "2024.01.08",
-    likes: 5,
-    images: [
-      "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=300&h=300&fit=crop&crop=center",
-      "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=300&h=300&fit=crop&crop=center",
-    ],
+      "원두 산미가 과하지 않고 고소한 쪽이라 취향에 잘 맞았어요. 직원분이 메뉴 설명도 친절하게 해주셨습니다.",
+    date: "2026.04.03",
+    likes: 10,
+    rating: 4.5,
+    reviewerId: "reviewer-103",
+    profileImageUrl:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&h=120&fit=crop&crop=face",
   },
   {
     id: 4,
-    user: "커피마니아",
+    user: "주말카공족",
     content:
-      "커피 맛이 정말 좋아요! 원두도 신선하고 로스팅도 완벽합니다. 매일 와도 질리지 않을 것 같아요.",
-    date: "2024.01.05",
+      "주말 오후엔 사람이 많지만 회전이 빨라 오래 대기하지는 않았어요. 이어폰 끼고 작업하기 무난합니다.",
+    date: "2026.03.30",
+    likes: 6,
+    rating: 4.1,
+  },
+  {
+    id: 5,
+    user: "동네주민",
+    content:
+      "재방문할수록 안정적인 맛이라 믿고 가게 됩니다. 매장 청결 상태도 꾸준히 좋아요.",
+    date: "2026.03.27",
     likes: 7,
+    rating: 4.3,
     images: [
-      "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=300&h=300&fit=crop&crop=center",
+      "https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=300&h=300&fit=crop&crop=center",
     ],
   },
 ];

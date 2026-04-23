@@ -15,12 +15,32 @@ body {
 }
 
 body {
-  color: #000;
-  background: #fff;
+  color: #1f2937;
+  background: #f6f4f1;
+  font-family: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 :root {
   --content-max-width: 1280px;
+  --ui-radius: 16px;
+  --ui-shadow: 0 8px 28px rgba(17, 24, 39, 0.06);
+  --focus-ring: 0 0 0 3px rgba(95, 70, 49, 0.2);
+}
+
+a,
+button {
+  transition: all 0.2s ease;
+}
+
+::selection {
+  background: rgba(95, 70, 49, 0.15);
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 @layer components {
@@ -34,6 +54,37 @@ body {
 
   .section-gap {
     @apply mt-6 sm:mt-8 lg:mt-10;
+  }
+
+  .header-component {
+    @apply sticky top-0 z-40 bg-white/85 backdrop-blur-md border-b border-gray-200/70;
+  }
+
+  .app-card {
+    @apply bg-surface rounded-xl2 border border-gray-200/80 shadow-soft;
+  }
+
+  .app-title {
+    @apply text-text-primary font-semibold tracking-tight;
+  }
+
+  .app-caption {
+    @apply text-text-muted text-sm;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --ui-radius: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

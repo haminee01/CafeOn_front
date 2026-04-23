@@ -57,7 +57,7 @@ export function useToast() {
   }, []);
 
   const ToastContainer = () => (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
+    <div className="fixed top-3 right-3 sm:top-4 sm:right-4 z-50 space-y-2 w-[calc(100vw-1.5rem)] sm:w-auto sm:max-w-sm">
       {toasts.map((toast) => (
         <Toast
           key={toast.id}
@@ -93,15 +93,15 @@ export default function Toast({
   const getTypeStyles = (): { backgroundColor: string; color: string } => {
     switch (type) {
       case "success":
-        return { backgroundColor: colors.beige, color: "white" };
+        return { backgroundColor: "#4f6d52", color: "white" };
       case "delete":
         return { backgroundColor: colors.brown, color: "white" };
       case "error":
         return { backgroundColor: colors.red, color: "white" };
       case "info":
-        return { backgroundColor: "#6b7280", color: "white" };
+        return { backgroundColor: "#475569", color: "white" };
       default:
-        return { backgroundColor: colors.beige, color: "white" };
+        return { backgroundColor: "#4f6d52", color: "white" };
     }
   };
 
@@ -110,11 +110,11 @@ export default function Toast({
   return (
     <div
       style={typeStyles}
-      className={`px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${
-        isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
+      className={`px-4 py-3 rounded-xl shadow-soft border border-white/20 backdrop-blur-sm transition-all duration-300 ${
+        isVisible ? "opacity-100 translate-y-0 sm:translate-x-0" : "opacity-0 translate-y-1 sm:translate-x-4"
       }`}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2.5">
         {type === "success" && (
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <path
@@ -142,7 +142,7 @@ export default function Toast({
             />
           </svg>
         )}
-        <span className="font-medium">{message}</span>
+        <span className="font-medium text-sm sm:text-[15px] leading-5">{message}</span>
       </div>
     </div>
   );

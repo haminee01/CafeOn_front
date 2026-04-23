@@ -64,80 +64,91 @@ export default function ReviewSection({
   const [showAllReviews, setShowAllReviews] = useState(false);
   const INITIAL_REVIEWS_LIMIT = 5;
 
-  // initialReviews 또는 sortBy 변경 시 리뷰 목록 새로고침 및 정렬
-  useEffect(() => {
-    setLoading(true);
-
-    if (initialReviews && initialReviews.length > 0) {
-      // initialReviews가 있으면 변환 수행
-      const transformedReviews: CafeReview[] = initialReviews.map((r: any) => {
-        // 리뷰 이미지 처리: 다양한 형식 지원
-        let reviewImages: string[] = [];
-        if (r.images && Array.isArray(r.images)) {
-          reviewImages = r.images
-            .map((img: any) => {
-              // 이미지가 객체인 경우
-              if (typeof img === "object" && img !== null) {
-                return (
-                  img.imageUrl ||
-                  img.image_url ||
-                  img.url ||
-                  img.publicUrl ||
-                  img.originalFileName ||
-                  ""
-                );
-              }
-              // 이미지가 문자열인 경우
-              return img || "";
-            })
-            .filter((url: string) => url && url.trim() !== "");
-        }
-
-        return {
-          id: r.reviewId,
-          user: r.reviewerNickname || "익명",
-          rating: r.rating,
-          content: r.content,
-          date: formatRelativeTime(r.createdAt),
-          createdAt: r.createdAt, // 정렬을 위한 원본 날짜 저장
-          likes: 0,
-          images: reviewImages,
-          reviewerId: r.reviewerId,
-          profileImageUrl: r.reviewerProfileImageUrl,
-        };
-      });
-
-      // sortBy에 따라 정렬
-      const sortedReviews = [...transformedReviews].sort((a, b) => {
-        switch (sortBy) {
-          case "rating-high":
-            return (b.rating ?? 0) - (a.rating ?? 0);
-          case "rating-low":
-            return (a.rating ?? 0) - (b.rating ?? 0);
-          case "likes":
-            return b.likes - a.likes;
-          case "latest":
-          default:
-            // 최신순은 원본 createdAt 날짜 기준 정렬
-            const dateA = (a as any).createdAt
-              ? new Date((a as any).createdAt).getTime()
-              : 0;
-            const dateB = (b as any).createdAt
-              ? new Date((b as any).createdAt).getTime()
-              : 0;
-            return dateB - dateA; // 최신순 (내림차순)
-        }
-      });
-
-      setReviews(sortedReviews);
-    } else {
-      setReviews([]);
+  const normalizeReview = (r: any): CafeReview => {
+    let reviewImages: string[] = [];
+    if (r.images && Array.isArray(r.images)) {
+      reviewImages = r.images
+        .map((img: any) => {
+          if (typeof img === "object" && img !== null) {
+            return (
+              img.imageUrl ||
+              img.image_url ||
+              img.url ||
+              img.publicUrl ||
+              img.originalFileName ||
+              ""
+            );
+          }
+          return img || "";
+        })
+        .filter((url: string) => url && url.trim() !== "");
     }
 
-    // 로딩 완료
-    setLoading(false);
+    const rawCreatedAt = r.createdAt || r.created_at || r.date || "";
+    return {
+      id: Number(r.reviewId ?? r.id ?? Date.now()),
+      user: r.reviewerNickname || r.user || "익명",
+      rating: Number(r.rating ?? 0),
+      content: r.content || "",
+      date: rawCreatedAt ? formatRelativeTime(rawCreatedAt) : "방금 전",
+      createdAt: rawCreatedAt,
+      likes: Number(r.likes ?? 0),
+      images: reviewImages,
+      reviewerId: r.reviewerId,
+      profileImageUrl: r.reviewerProfileImageUrl || r.profileImageUrl,
+    } as CafeReview;
+  };
+
+  // initialReviews 또는 sortBy 변경 시 리뷰 목록 새로고침 및 정렬
+  useEffect(() => {
+    const loadReviews = async () => {
+      setLoading(true);
+      try {
+        let sourceReviews = Array.isArray(initialReviews) ? initialReviews : [];
+
+        // 상세 API에 리뷰가 비어있으면 리뷰 API를 fallback으로 호출
+        if (sourceReviews.length === 0) {
+          const response = await getCafeReviews(cafeId);
+          sourceReviews = Array.isArray(response?.reviews) ? response.reviews : [];
+        }
+
+        if (sourceReviews.length === 0) {
+          setReviews([]);
+          return;
+        }
+
+        const transformedReviews: CafeReview[] = sourceReviews.map(normalizeReview);
+        const sortedReviews = [...transformedReviews].sort((a, b) => {
+          switch (sortBy) {
+            case "rating-high":
+              return (b.rating ?? 0) - (a.rating ?? 0);
+            case "rating-low":
+              return (a.rating ?? 0) - (b.rating ?? 0);
+            case "likes":
+              return b.likes - a.likes;
+            case "latest":
+            default:
+              const dateA = (a as any).createdAt
+                ? new Date((a as any).createdAt).getTime()
+                : 0;
+              const dateB = (b as any).createdAt
+                ? new Date((b as any).createdAt).getTime()
+                : 0;
+              return dateB - dateA;
+          }
+        });
+        setReviews(sortedReviews);
+      } catch (error) {
+        console.error("리뷰 로딩 실패:", error);
+        setReviews([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadReviews();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialReviews, sortBy]);
+  }, [initialReviews, sortBy, cafeId]);
 
   // refreshTrigger 변경 시 리뷰 목록 새로고침 (강제 API 재호출)
   useEffect(() => {
@@ -151,42 +162,7 @@ export default function ReviewSection({
           const reviewData = cafeData.reviews || [];
 
           if (reviewData && reviewData.length > 0) {
-            const transformedReviews: CafeReview[] = reviewData.map(
-              (r: any) => {
-                // 리뷰 이미지 처리
-                let reviewImages: string[] = [];
-                if (r.images && Array.isArray(r.images)) {
-                  reviewImages = r.images
-                    .map((img: any) => {
-                      if (typeof img === "object" && img !== null) {
-                        return (
-                          img.imageUrl ||
-                          img.image_url ||
-                          img.url ||
-                          img.publicUrl ||
-                          img.originalFileName ||
-                          ""
-                        );
-                      }
-                      return img || "";
-                    })
-                    .filter((url: string) => url && url.trim() !== "");
-                }
-
-                return {
-                  id: r.reviewId,
-                  user: r.reviewerNickname || "익명",
-                  rating: r.rating,
-                  content: r.content,
-                  date: formatRelativeTime(r.createdAt),
-                  createdAt: r.createdAt, // 정렬을 위한 원본 날짜 저장
-                  likes: 0,
-                  images: reviewImages,
-                  reviewerId: r.reviewerId,
-                  profileImageUrl: r.reviewerProfileImageUrl,
-                };
-              }
-            );
+            const transformedReviews: CafeReview[] = reviewData.map(normalizeReview);
 
             // 정렬 적용
             const sortedReviews = [...transformedReviews].sort((a, b) => {
