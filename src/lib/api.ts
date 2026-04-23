@@ -31,7 +31,6 @@ interface CafeApiResponse {
   createdAt?: string;
   created_at?: string;
   description?: string;
-  reviewsSummary?: string;
   tags?: string[];
   photoUrl?: string | null;
   photo_url?: string | null;
