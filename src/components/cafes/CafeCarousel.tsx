@@ -19,21 +19,28 @@ const CafeCarousel: React.FC<CafeCarouselProps> = ({
   description = "추천드리는 카페예요.",
   showAllButton = true,
 }) => {
+  const getIsMobile = () => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth < 768;
+  };
+
   // 반응형 카드 수 계산
   const getCardsPerPage = () => {
     if (typeof window === "undefined") return 4;
     const width = window.innerWidth;
     if (width >= 1280) return 4; // 노트북/데스크탑
-    if (width >= 768) return 3; // 아이패드
+    if (width >= 768) return 4; // 아이패드
     return 2; // 모바일
   };
 
   const [currentPage, setCurrentPage] = useState(0);
   const [cardsPerPage, setCardsPerPage] = useState(getCardsPerPage());
+  const [isMobile, setIsMobile] = useState(getIsMobile());
 
   useEffect(() => {
     const handleResize = () => {
       setCardsPerPage(getCardsPerPage());
+      setIsMobile(getIsMobile());
       setCurrentPage(0); // 화면 크기 변경 시 첫 페이지로 리셋
     };
     window.addEventListener("resize", handleResize);
@@ -72,12 +79,22 @@ const CafeCarousel: React.FC<CafeCarouselProps> = ({
       </p>
 
       <div className="relative">
-        {/* 카페 카드 그리드 - 반응형 */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5 px-0 sm:px-1 md:px-8 lg:px-12">
-          {currentCafes.map((cafe) => (
-            <CafeCard key={cafe.cafe_id} cafe={cafe} />
-          ))}
-        </div>
+        {/* 모바일에서는 손가락으로 좌우 스크롤 가능하도록 전체 카드 노출 */}
+        {isMobile ? (
+          <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {cafes.map((cafe) => (
+              <div key={cafe.cafe_id} className="min-w-[48%] snap-start">
+                <CafeCard cafe={cafe} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5 px-0 sm:px-1 md:px-8 lg:px-12">
+            {currentCafes.map((cafe) => (
+              <CafeCard key={cafe.cafe_id} cafe={cafe} />
+            ))}
+          </div>
+        )}
 
         {/* 좌우 버튼 - 카드 그리드 양 옆에 배치 (데스크탑에서만 표시) */}
         {cardsPerPage >= 4 && (
@@ -133,7 +150,7 @@ const CafeCarousel: React.FC<CafeCarouselProps> = ({
         )}
 
         {/* 페이지 인디케이터 */}
-        {totalPages > 1 && (
+        {!isMobile && totalPages > 1 && (
           <div className="flex justify-center items-center gap-2 mt-4">
             {Array.from({ length: totalPages }, (_, index) => (
               <button

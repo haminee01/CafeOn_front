@@ -143,8 +143,8 @@ const ChatRoomPanel: React.FC<{
   activeRoom: MyChatRoom;
   currentChat: any;
   onLeaveRoom: () => void;
-  onToggleRoomList: () => void;
-}> = ({ activeRoom, currentChat, onLeaveRoom, onToggleRoomList }) => {
+  onBackToRoomList: () => void;
+}> = ({ activeRoom, currentChat, onLeaveRoom, onBackToRoomList }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user } = useAuth();
   const currentUserId = user?.id || "user-me";
@@ -232,10 +232,10 @@ const ChatRoomPanel: React.FC<{
         </h2>
         <div className="flex items-center space-x-2">
           <button
-            className="md:hidden text-gray-900 px-3 py-1 rounded-full border border-gray-200 text-sm"
-            onClick={onToggleRoomList}
+            className="xl:hidden text-gray-900 px-3 py-1 rounded-full border border-gray-200 text-sm"
+            onClick={onBackToRoomList}
           >
-            방 목록
+            채팅방 목록
           </button>
           {/* 사이드바 토글 버튼 (햄버거 메뉴) */}
           <button
@@ -321,7 +321,7 @@ const ChatRoomPanel: React.FC<{
             onClick={closeSidebar}
           />
           {/* 사이드바 */}
-          <div className="absolute right-0 top-0 bottom-0 z-50">
+          <div className="absolute inset-0 z-50">
             <ChatSidebar
               participants={currentChat.participants}
               currentUserId={currentUserId}
@@ -343,8 +343,8 @@ const ChatRoomPanel: React.FC<{
 const GroupChatRoomView: React.FC<{
   activeRoom: MyChatRoom;
   onLeaveRoom: () => void;
-  onToggleRoomList: () => void;
-}> = ({ activeRoom, onLeaveRoom, onToggleRoomList }) => {
+  onBackToRoomList: () => void;
+}> = ({ activeRoom, onLeaveRoom, onBackToRoomList }) => {
   const cafeChat = useCafeChat({
     cafeId: activeRoom.cafeId?.toString() || "",
     cafeName: activeRoom.displayName || "",
@@ -356,7 +356,7 @@ const GroupChatRoomView: React.FC<{
       activeRoom={activeRoom}
       currentChat={cafeChat}
       onLeaveRoom={onLeaveRoom}
-      onToggleRoomList={onToggleRoomList}
+      onBackToRoomList={onBackToRoomList}
     />
   );
 };
@@ -364,8 +364,8 @@ const GroupChatRoomView: React.FC<{
 const DmChatRoomView: React.FC<{
   activeRoom: MyChatRoom;
   onLeaveRoom: () => void;
-  onToggleRoomList: () => void;
-}> = ({ activeRoom, onLeaveRoom, onToggleRoomList }) => {
+  onBackToRoomList: () => void;
+}> = ({ activeRoom, onLeaveRoom, onBackToRoomList }) => {
   const dmChat = useDmChat({
     counterpartId: "",
     counterpartName: activeRoom.displayName || "",
@@ -377,7 +377,7 @@ const DmChatRoomView: React.FC<{
       activeRoom={activeRoom}
       currentChat={dmChat}
       onLeaveRoom={onLeaveRoom}
-      onToggleRoomList={onToggleRoomList}
+      onBackToRoomList={onBackToRoomList}
     />
   );
 };
@@ -385,8 +385,8 @@ const DmChatRoomView: React.FC<{
 const ChatRoomView: React.FC<{
   activeRoom: MyChatRoom | null;
   onLeaveRoom: () => void;
-  onToggleRoomList: () => void;
-}> = ({ activeRoom, onLeaveRoom, onToggleRoomList }) => {
+  onBackToRoomList: () => void;
+}> = ({ activeRoom, onLeaveRoom, onBackToRoomList }) => {
   if (!activeRoom) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gray-50">
@@ -409,7 +409,7 @@ const ChatRoomView: React.FC<{
         key={`group-${activeRoom.roomId}`}
         activeRoom={activeRoom}
         onLeaveRoom={onLeaveRoom}
-        onToggleRoomList={onToggleRoomList}
+        onBackToRoomList={onBackToRoomList}
       />
     );
   }
@@ -419,7 +419,7 @@ const ChatRoomView: React.FC<{
       key={`dm-${activeRoom.roomId}`}
       activeRoom={activeRoom}
       onLeaveRoom={onLeaveRoom}
-      onToggleRoomList={onToggleRoomList}
+      onBackToRoomList={onBackToRoomList}
     />
   );
 };
@@ -521,11 +521,18 @@ const ChatListPageContent = () => {
     return () => window.removeEventListener("demo-chat-updated", handler);
   }, [loadChatRooms]);
 
-  const [isMobileRoomListOpen, setIsMobileRoomListOpen] = useState(false);
-
   const handleSelectRoom = (roomId: number) => {
-    setIsMobileRoomListOpen(false);
     handleRoomClick(roomId);
+  };
+
+  const handleBackToRoomList = () => {
+    setActiveRoom(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("room");
+    const query = params.toString();
+    router.replace(query ? `/mypage/chats?${query}` : "/mypage/chats", {
+      scroll: false,
+    });
   };
 
   return (
@@ -543,18 +550,9 @@ const ChatListPageContent = () => {
           />
         </div>
       ) : (
-        <div className="flex-1 flex flex-col md:flex-row h-full relative">
-          {/* 모바일 오버레이 */}
-          {isMobileRoomListOpen && (
-            <div
-              className="md:hidden fixed inset-0 bg-black bg-opacity-40 z-40"
-              onClick={() => setIsMobileRoomListOpen(false)}
-            />
-          )}
+        <div className="flex-1 flex h-full relative">
           <aside
-            className={`${
-              isMobileRoomListOpen ? "block" : "hidden"
-            } md:block w-full md:w-80 flex-shrink-0 border-r border-gray-200 h-full overflow-y-auto bg-white z-50 md:z-auto md:static fixed inset-y-0 left-0`}
+            className="hidden xl:block w-80 flex-shrink-0 border-r border-gray-200 h-full overflow-y-auto bg-white"
           >
             <ChatRoomList
               chatRooms={chatRooms}
@@ -575,7 +573,7 @@ const ChatListPageContent = () => {
                 setActiveRoomId(null);
                 loadChatRooms();
               }}
-              onToggleRoomList={() => setIsMobileRoomListOpen((prev) => !prev)}
+              onBackToRoomList={handleBackToRoomList}
             />
           </main>
         </div>
