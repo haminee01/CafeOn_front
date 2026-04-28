@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { sendChatImage } from "@/lib/api";
 
 interface ChatMessageInputProps extends React.HTMLAttributes<HTMLFormElement> {
@@ -15,12 +15,29 @@ const ChatMessageInput: React.FC<ChatMessageInputProps> = ({
   disabled = false,
   roomId,
 }) => {
+  const getIsMobileViewport = () => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth < 768;
+  };
+
   const [input, setInput] = useState("");
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isImageFormOpen, setIsImageFormOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(
+    getIsMobileViewport()
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileViewport(getIsMobileViewport());
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,7 +177,7 @@ const ChatMessageInput: React.FC<ChatMessageInputProps> = ({
           placeholder="메시지를 입력하세요..."
           disabled={disabled}
           className="flex-1 px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-xl text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#6E4213] transition duration-150 mr-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
-          autoFocus
+          autoFocus={!isMobileViewport}
         />
         <button
           type="submit"

@@ -219,11 +219,11 @@ const CafeChatModal: React.FC<CafeChatModalProps> = ({
         {!isLoading && !error && !requiresLogin && (
           <>
             {/* Header */}
-            <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-gray-200 p-4 gap-2 rounded-t-xl z-10 shadow-sm bg-white sticky top-0">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+            <header className="flex items-center justify-between border-gray-200 p-4 rounded-t-xl z-10 shadow-sm bg-white sticky top-0 gap-2">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate pr-2">
                 {cafeName}
               </h2>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                 {/* 사이드바 토글 버튼 (햄버거 메뉴) */}
                 <button
                   onClick={(e) => {
