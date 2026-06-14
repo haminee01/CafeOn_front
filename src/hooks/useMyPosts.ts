@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { MyPost, MyPostsResponse, MyPostsParams } from "@/types/Post";
 import apiClient from "@/lib/axios";
-import { mockMyPosts } from "@/data/mockUserActivity";
+import { listMyDemoPosts } from "@/lib/mockCommunityApi";
 
 export const useMyPosts = (params: MyPostsParams = {}) => {
   const [posts, setPosts] = useState<MyPost[]>([]);
@@ -16,13 +16,13 @@ export const useMyPosts = (params: MyPostsParams = {}) => {
 
     try {
       if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
-        const page = fetchParams.page ?? 0;
-        const size = fetchParams.size ?? 10;
-        const start = page * size;
-        const content = mockMyPosts.slice(start, start + size) as MyPost[];
-        setPosts(content);
-        setTotalElements(mockMyPosts.length);
-        setTotalPages(Math.max(1, Math.ceil(mockMyPosts.length / size)));
+        const pageData = listMyDemoPosts({
+          page: fetchParams.page ?? 0,
+          size: fetchParams.size ?? 10,
+        });
+        setPosts(pageData.content as MyPost[]);
+        setTotalElements(pageData.totalElements);
+        setTotalPages(pageData.totalPages);
         return;
       }
       const response = await apiClient.get<MyPostsResponse>("/api/my/posts", {

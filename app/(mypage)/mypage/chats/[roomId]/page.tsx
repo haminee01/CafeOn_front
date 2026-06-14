@@ -16,6 +16,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePrivateChatFlow } from "@/hooks/usePrivateChatFlow";
 import PrivateChatModal from "@/components/chat/PrivateChatModal";
 import ProfileMiniPopup from "@/components/common/ProfileMiniPopup";
+import { getMyChatRooms } from "@/lib/api";
+import { MyChatRoom } from "@/types/chat";
 
 const ProfileIcon: React.FC<{ size?: string }> = ({ size = "w-8 h-8" }) => (
   <div
@@ -39,71 +41,76 @@ const ProfileIcon: React.FC<{ size?: string }> = ({ size = "w-8 h-8" }) => (
   </div>
 );
 
-// 채팅방 목록은 목업 데이터 사용 (나중에 API로 교체 가능)
-const DUMMY_CHAT_ROOMS = [
-  {
-    id: "private-1",
-    displayName: "on",
-    lastMessage: "!",
-    isUnread: false,
-    memberCount: 2,
-  },
-  {
-    id: "private-2",
-    displayName: "키이스케이프 강남점 채팅방",
-    lastMessage: "2",
-    isUnread: false,
-    memberCount: 3,
-  },
-];
-
 // 3.2 ChatRoomList
 const ChatRoomList: React.FC<{
   activeRoomId: string;
   onRoomClick: (roomId: string) => void;
 }> = ({ activeRoomId, onRoomClick }) => {
+  const [rooms, setRooms] = useState<MyChatRoom[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadRooms = async () => {
+      try {
+        const response = await getMyChatRooms();
+        setRooms(response.data?.content || []);
+      } catch {
+        setRooms([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadRooms();
+  }, []);
+
   return (
     <div className="w-full bg-white">
       <h1 className="p-4 text-2xl font-bold border-b border-[#CDCDCD] text-gray-800">
         채팅방 목록
       </h1>
-      {DUMMY_CHAT_ROOMS.map((room) => (
-        <div
-          key={room.id}
-          className={`
+      {isLoading ? (
+        <div className="p-4 text-sm text-gray-500">채팅방을 불러오는 중...</div>
+      ) : rooms.length === 0 ? (
+        <div className="p-4 text-sm text-gray-500">참여 중인 채팅방이 없습니다.</div>
+      ) : (
+        rooms.map((room) => (
+          <div
+            key={room.roomId}
+            className={`
             ${
-              room.id === activeRoomId
+              String(room.roomId) === activeRoomId
                 ? "bg-[#F5F5F5] border-r-4 border-[#6E4213]"
                 : ""
             }
             p-4 border-b border-[#CDCDCD] hover:bg-gray-50 cursor-pointer transition duration-150
           `}
-          onClick={() => onRoomClick(room.id)}
-        >
-          <div className="flex items-start">
-            <ProfileIcon size="w-12 h-12" />
-            <div className="ml-3 flex-1 min-w-0">
-              <div className="flex justify-between items-center">
-                <h3
-                  className={`text-base font-semibold truncate ${
-                    room.id === activeRoomId
-                      ? "text-[#6E4213]"
-                      : "text-gray-800"
-                  }`}
-                >
-                  {room.displayName}
-                </h3>
-                {room.isUnread && (
-                  <span className="w-2 h-2 ml-2 bg-red-500 rounded-full flex-shrink-0" />
-                )}
+            onClick={() => onRoomClick(String(room.roomId))}
+          >
+            <div className="flex items-start">
+              <ProfileIcon size="w-12 h-12" />
+              <div className="ml-3 flex-1 min-w-0">
+                <div className="flex justify-between items-center">
+                  <h3
+                    className={`text-base font-semibold truncate ${
+                      String(room.roomId) === activeRoomId
+                        ? "text-[#6E4213]"
+                        : "text-gray-800"
+                    }`}
+                  >
+                    {room.displayName}
+                  </h3>
+                  {room.unreadCount > 0 && (
+                    <span className="w-2 h-2 ml-2 bg-red-500 rounded-full flex-shrink-0" />
+                  )}
+                </div>
+                <p className="text-sm text-gray-500 truncate mt-1">
+                  {room.lastMessage}
+                </p>
               </div>
-              <p className="text-sm text-gray-500 truncate mt-1">
-                {room.lastMessage}
-              </p>
             </div>
           </div>
-        </div>
-      ))}
+        ))
+      )}
     </div>
   );
 };

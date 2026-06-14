@@ -5,6 +5,7 @@ import {
   demoGetMyChatRooms,
   demoMarkAsRead,
   demoHistory,
+  demoSendImage,
 } from "@/lib/mockChatApi";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
@@ -427,6 +428,9 @@ export async function createReview(
     images?: File[];
   },
 ) {
+  if (DEMO_MODE) {
+    return mockApi.createReviewMock(cafeId, reviewData);
+  }
   try {
     const formData = new FormData();
 
@@ -472,6 +476,9 @@ export async function updateReview(
     images?: File[];
   },
 ) {
+  if (DEMO_MODE) {
+    return mockApi.updateReviewMock(reviewId, reviewData);
+  }
   try {
     const formData = new FormData();
 
@@ -521,6 +528,9 @@ export async function deleteReview(reviewId: string) {
 
 // 리뷰 신고 상태 확인
 export async function checkReviewReportStatus(reviewId: string) {
+  if (DEMO_MODE) {
+    return mockApi.checkReviewReportStatusMock(reviewId);
+  }
   try {
     const response = await apiClient.get(
       `/api/reviews/${reviewId}/reports/status`,
@@ -535,6 +545,9 @@ export async function checkReviewReportStatus(reviewId: string) {
 
 // 리뷰 신고
 export async function reportReview(reviewId: string, content: string) {
+  if (DEMO_MODE) {
+    return mockApi.reportReviewMock(reviewId, content);
+  }
   try {
     const response = await apiClient.post(`/api/reviews/${reviewId}/reports`, {
       content,
@@ -584,15 +597,45 @@ export async function getWishlist(params?: {
 // 특정 카페의 위시리스트 카테고리 조회
 export async function getWishlistCategories(cafeId: string) {
   if (DEMO_MODE) {
-    return mockApi.getWishlistCategoriesMock(cafeId);
+    const result = mockApi.getWishlistCategoriesMock(cafeId);
+    return {
+      data: sanitizeWishlistCategories(
+        Array.isArray(result?.data) ? result.data : []
+      ),
+    };
   }
   try {
     const response = await apiClient.get(`/api/my/wishlist/${cafeId}`);
-    return response.data;
+    return { data: parseWishlistCategoriesResponse(response.data, cafeId) };
   } catch (error) {
     throw normalizeError(error, {
       action: "getWishlistCategories",
       cafeId,
+    });
+  }
+}
+
+// 위시리스트 추가
+export async function addToWishlist(cafeId: string, category: string) {
+  if (DEMO_MODE) {
+    return mockApi.addWishlistMock(cafeId, category);
+  }
+  try {
+    const normalizedCategory = category.toUpperCase();
+    const current = await getWishlistCategories(cafeId);
+    if ((current.data || []).includes(normalizedCategory)) {
+      return { message: "이미 위시리스트에 등록되어 있습니다.", data: { wished: true } };
+    }
+
+    const response = await apiClient.post(
+      `/api/my/wishlist/${cafeId}?category=${normalizedCategory}`,
+    );
+    return response.data;
+  } catch (error) {
+    throw normalizeError(error, {
+      action: "addToWishlist",
+      cafeId,
+      category,
     });
   }
 }
@@ -933,6 +976,120 @@ export async function createAdminInquiryAnswer(
 
 // ==================== Wishlist API ====================
 
+export const WISHLIST_CATEGORY_VALUES = [
+  "HIDEOUT",
+  "WORK",
+  "ATMOSPHERE",
+  "TASTE",
+  "PLANNED",
+] as const;
+
+export const sanitizeWishlistCategories = (categories: string[]) =>
+  [
+    ...new Set(
+      categories
+        .map((category) => category.trim().toUpperCase())
+        .filter((category) =>
+          WISHLIST_CATEGORY_VALUES.includes(
+            category as (typeof WISHLIST_CATEGORY_VALUES)[number]
+          )
+        )
+    ),
+  ];
+
+export const normalizeWishlistCategories = (response: unknown): string[] => {
+  if (!response) return [];
+
+  const toCategory = (value: unknown): string | null => {
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      return trimmed ? trimmed.toUpperCase() : null;
+    }
+    if (value && typeof value === "object" && "category" in value) {
+      const category = String((value as { category: string }).category).trim();
+      return category ? category.toUpperCase() : null;
+    }
+    return null;
+  };
+
+  if (Array.isArray(response)) {
+    return response
+      .map(toCategory)
+      .filter((item): item is string => Boolean(item));
+  }
+
+  if (typeof response !== "object") return [];
+
+  const obj = response as Record<string, unknown>;
+
+  if (Array.isArray(obj.data)) {
+    return normalizeWishlistCategories(obj.data);
+  }
+  if (Array.isArray(obj.categories)) {
+    return normalizeWishlistCategories(obj.categories);
+  }
+  if (Array.isArray(obj.content)) {
+    return normalizeWishlistCategories(obj.content);
+  }
+
+  if (obj.data && typeof obj.data === "object") {
+    const data = obj.data as Record<string, unknown>;
+    if (Array.isArray(data.content)) {
+      return normalizeWishlistCategories(data.content);
+    }
+    if (Array.isArray(data.categories)) {
+      return normalizeWishlistCategories(data.categories);
+    }
+    return normalizeWishlistCategories(data);
+  }
+
+  return [];
+};
+
+const parseWishlistCategoriesResponse = (
+  response: unknown,
+  cafeId: string
+): string[] => {
+  if (!response || typeof response !== "object") {
+    return sanitizeWishlistCategories(normalizeWishlistCategories(response));
+  }
+
+  const obj = response as Record<string, unknown>;
+
+  if (Array.isArray(obj.data)) {
+    return sanitizeWishlistCategories(normalizeWishlistCategories(obj.data));
+  }
+
+  const data =
+    obj.data && typeof obj.data === "object"
+      ? (obj.data as Record<string, unknown>)
+      : null;
+
+  if (data && Array.isArray(data.content)) {
+    const filtered = data.content
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const record = item as Record<string, unknown>;
+        if (record.cafeId != null && String(record.cafeId) !== String(cafeId)) {
+          return null;
+        }
+        if (typeof record.category === "string") {
+          return record.category;
+        }
+        return null;
+      })
+      .filter((item): item is string => Boolean(item));
+
+    return sanitizeWishlistCategories(filtered);
+  }
+
+  if (data && Array.isArray(data.categories)) {
+    return sanitizeWishlistCategories(normalizeWishlistCategories(data.categories));
+  }
+
+  return sanitizeWishlistCategories(normalizeWishlistCategories(response));
+};
+
 // 위시리스트 타입 정의
 export interface WishlistResponse {
   data: {
@@ -1078,6 +1235,9 @@ export async function sendChatImage(
   files: File[],
   caption?: string,
 ): Promise<SendChatImageResponse> {
+  if (DEMO_MODE) {
+    return demoSendImage(String(roomId), files, caption) as SendChatImageResponse;
+  }
   try {
     if (!files || files.length === 0) {
       throw new Error("전송할 파일을 선택해주세요.");

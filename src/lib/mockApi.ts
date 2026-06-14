@@ -14,7 +14,8 @@ interface DemoUserProfile {
 const STORAGE_KEYS = {
   profile: "cafeon-demo-profile",
   wishlist: "cafeon-demo-wishlist",
-  reviews: "cafeon-demo-reviews",
+  reviews: "cafeon-demo-reviews-v2",
+  reportedReviews: "cafeon-demo-reported-reviews",
   chatMessages: "cafeon-demo-chat-messages",
 };
 
@@ -100,11 +101,23 @@ const ensureDemoWishlist = () => {
   }>;
 };
 
+const REVIEW_CONTENTS = [
+  "조용해서 노트북 작업하기 좋았어요. 콘센트도 충분하고 와이파이 속도가 빠릅니다.",
+  "라떼 맛이 부드럽고 디저트도 신선했습니다. 직원분들이 친절해서 기분 좋게 다녀왔어요.",
+  "인테리어가 예뻐서 사진 찍기 좋아요. 주말 오후에는 사람이 많으니 평일 방문을 추천합니다.",
+  "시그니처 음료가 인상적이었고, 매장 분위기가 아늑해서 데이트하기 좋을 것 같아요.",
+  "가격 대비 만족도가 높았습니다. 테이크아웃 컵도 깔끔해서 포장해 가기 편했어요.",
+  "창가 자리 뷰가 좋아서 오래 머물렀습니다. 음악 볼륨도 적당해서 대화하기 편했어요.",
+];
+
 const ensureDemoReviews = () => {
   const fallback = mockCafes.slice(0, 12).map((cafe, idx) => ({
     reviewId: idx + 1,
     rating: 3.5 + (idx % 3) * 0.5,
-    content: `${cafe.name} 방문 후기입니다. 공간 분위기와 커피 퀄리티가 좋아 재방문 의사가 있어요.`,
+    content: REVIEW_CONTENTS[idx % REVIEW_CONTENTS.length].replace(
+      /^/,
+      `${cafe.name} 방문 후기입니다. `
+    ),
     createdAt: new Date(Date.now() - idx * 86400000).toISOString(),
     reported: false,
     cafeId: Number(cafe.cafe_id),
@@ -118,6 +131,92 @@ const ensureDemoReviews = () => {
   const current = readStorage(STORAGE_KEYS.reviews, fallback);
   writeStorage(STORAGE_KEYS.reviews, current);
   return current;
+};
+
+export const createReviewMock = (
+  cafeId: string,
+  reviewData: { content: string; rating: number; images?: File[] }
+) => {
+  const reviews = ensureDemoReviews();
+  const cafe = getCafeById(cafeId);
+  const profile = ensureDemoProfile();
+  const nextId =
+    reviews.length > 0
+      ? Math.max(...reviews.map((item: { reviewId: number }) => item.reviewId)) + 1
+      : 1;
+  const created = {
+    reviewId: nextId,
+    rating: reviewData.rating,
+    content: reviewData.content,
+    createdAt: new Date().toISOString(),
+    reported: false,
+    cafeId: Number(cafeId),
+    cafeName: cafe.name,
+    reviewerId: profile.userId,
+    reviewerNickname: profile.nickname,
+    reviewerProfileImageUrl: profile.profileImageUrl,
+    images:
+      reviewData.images && reviewData.images.length > 0
+        ? reviewData.images.map((file, idx) => ({
+            imageId: nextId * 10 + idx,
+            originalFileName: file.name,
+            imageUrl: URL.createObjectURL(file),
+          }))
+        : [],
+  };
+  writeStorage(STORAGE_KEYS.reviews, [created, ...reviews]);
+  return { message: "리뷰가 작성되었습니다.", data: created };
+};
+
+export const updateReviewMock = (
+  reviewId: string,
+  reviewData: { content: string; rating: number; images?: File[] }
+) => {
+  const reviews = ensureDemoReviews();
+  const updated = reviews.map((item: any) => {
+    if (item.reviewId !== Number(reviewId)) return item;
+    const nextImages =
+      reviewData.images && reviewData.images.length > 0
+        ? [
+            ...(item.images || []),
+            ...reviewData.images.map((file, idx) => ({
+              imageId: Date.now() + idx,
+              originalFileName: file.name,
+              imageUrl: URL.createObjectURL(file),
+            })),
+          ]
+        : item.images;
+    return {
+      ...item,
+      content: reviewData.content,
+      rating: reviewData.rating,
+      images: nextImages,
+    };
+  });
+  writeStorage(STORAGE_KEYS.reviews, updated);
+  return { message: "리뷰가 수정되었습니다." };
+};
+
+export const checkReviewReportStatusMock = (reviewId: string) => {
+  const reported = readStorage<number[]>(STORAGE_KEYS.reportedReviews, []);
+  return {
+    message: "ok",
+    data: reported.includes(Number(reviewId)),
+  };
+};
+
+export const reportReviewMock = (reviewId: string, _content: string) => {
+  const reported = readStorage<number[]>(STORAGE_KEYS.reportedReviews, []);
+  if (!reported.includes(Number(reviewId))) {
+    writeStorage(STORAGE_KEYS.reportedReviews, [...reported, Number(reviewId)]);
+  }
+  writeStorage(
+    STORAGE_KEYS.reviews,
+    ensureDemoReviews().map((item: any) =>
+      item.reviewId === Number(reviewId) ? { ...item, reported: true } : item
+    )
+  );
+  return { message: "신고가 접수되었습니다." };
 };
 
 const ensureDemoChatMessages = () => {
@@ -250,11 +349,33 @@ export const getWishlistMock = (params?: { page?: number; size?: number; categor
 };
 
 export const deleteWishlistMock = (cafeId: number, category: string) => {
+  const targetCategory = category.toUpperCase() as WishlistCategory;
   const next = ensureDemoWishlist().filter(
-    (item) => !(item.cafeId === cafeId && item.category === category)
+    (item) => !(item.cafeId === cafeId && item.category === targetCategory)
   );
   writeStorage(STORAGE_KEYS.wishlist, next);
-  return { message: "북마크가 해제되었습니다." };
+  return { message: "북마크가 해제되었습니다.", data: { wished: false } };
+};
+
+export const addWishlistMock = (cafeId: string, category: string) => {
+  const list = ensureDemoWishlist();
+  const targetCategory = category.toUpperCase() as WishlistCategory;
+  const exists = list.find(
+    (item) => item.cafeId === Number(cafeId) && item.category === targetCategory
+  );
+  if (exists) {
+    return { message: "이미 북마크에 있습니다.", data: { wished: true } };
+  }
+
+  const cafe = getCafeById(cafeId);
+  const nextItem = {
+    id: Date.now(),
+    cafeId: Number(cafeId),
+    name: cafe.name,
+    category: targetCategory,
+  };
+  writeStorage(STORAGE_KEYS.wishlist, [...list, nextItem]);
+  return { message: "북마크에 추가되었습니다.", data: { wished: true } };
 };
 
 export const getWishlistCategoriesMock = (cafeId: string) => {
@@ -275,7 +396,7 @@ export const toggleWishlistMock = (cafeId: string, category: string) => {
       STORAGE_KEYS.wishlist,
       list.filter((item) => item.id !== exists.id)
     );
-    return { message: "북마크가 해제되었습니다." };
+    return { message: "북마크가 해제되었습니다.", data: { wished: false } };
   }
 
   const cafe = getCafeById(cafeId);
@@ -286,7 +407,7 @@ export const toggleWishlistMock = (cafeId: string, category: string) => {
     category: targetCategory,
   };
   writeStorage(STORAGE_KEYS.wishlist, [...list, nextItem]);
-  return { message: "북마크에 추가되었습니다." };
+  return { message: "북마크에 추가되었습니다.", data: { wished: true } };
 };
 
 export const getMyReviewsMock = (params?: { page?: number; size?: number }) => {

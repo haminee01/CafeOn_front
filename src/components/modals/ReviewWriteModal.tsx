@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { CafeReview } from "@/data/cafeDetails";
 import Button from "@/components/common/Button";
 import { useEscapeKey } from "../../hooks/useEscapeKey";
-import { createReview, updateReview } from "@/lib/api";
+import { createReview, updateReview, deleteReview } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToastContext } from "@/components/common/ToastProvider";
 
@@ -76,10 +76,20 @@ export default function ReviewWriteModal({
     }
   };
 
-  const handleDelete = () => {
-    // TODO: 리뷰 삭제 API 연동
-    showToast("리뷰가 삭제되었습니다.", "success");
-    onClose();
+  const handleDelete = async () => {
+    if (!editReview) return;
+    try {
+      setLoading(true);
+      await deleteReview(editReview.id.toString());
+      showToast("리뷰가 삭제되었습니다.", "success");
+      onClose();
+      onReviewSubmitted?.();
+    } catch (error) {
+      console.error("리뷰 삭제 실패:", error);
+      showToast("리뷰 삭제에 실패했습니다.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {

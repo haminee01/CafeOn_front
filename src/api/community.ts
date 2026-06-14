@@ -27,6 +27,12 @@ import {
   createDemoComment,
   toggleDemoPostLike,
   toggleDemoCommentLike,
+  updateDemoComment,
+  deleteDemoComment,
+  listMyDemoPosts,
+  listMyDemoComments,
+  listMyDemoLikedPosts,
+  listMyDemoLikedComments,
 } from "@/lib/mockCommunityApi";
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
@@ -445,7 +451,7 @@ export const updateCommentMutator = async (
   commentId: number,
   arg: { content: string }
 ): Promise<CommentUpdateResponse> => {
-  if (DEMO_MODE) return { message: "댓글이 수정되었습니다." };
+  if (DEMO_MODE) return updateDemoComment(postId, commentId, arg.content);
   try {
     const response = await apiClient.put(
       `/api/posts/${postId}/comments/${commentId}`,
@@ -465,7 +471,7 @@ export const deleteCommentMutator = async (
   postId: number,
   commentId: number
 ): Promise<CommentDeleteResponse> => {
-  if (DEMO_MODE) return { message: "댓글이 삭제되었습니다." };
+  if (DEMO_MODE) return deleteDemoComment(postId, commentId);
   try {
     const response = await apiClient.delete(
       `/api/posts/${postId}/comments/${commentId}`

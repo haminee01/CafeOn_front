@@ -96,10 +96,20 @@ const ensureRoomMessages = (roomId: string): ChatHistoryMessage[] => {
     const seed = Array.from({ length: 8 }).map((_, idx) => {
       const createdAt = new Date(Date.now() - (8 - idx) * 7 * 60 * 1000).toISOString();
       const mine = idx % 2 === 1;
+      const messages = [
+        "안녕하세요! 이 카페 분위기 어떤가요?",
+        "조용해서 작업하기 좋아 보여요.",
+        "시그니처 라떼 추천해 주실 수 있나요?",
+        "저는 크루아상이 정말 맛있었어요.",
+        "오늘 오후에 방문 예정인데 자리 많을까요?",
+        "와이파이 속도도 괜찮은 편이에요.",
+        "좋아요, 감사합니다!",
+        "다음에 같이 가요!",
+      ];
       return {
         chatId: Number(roomId) * 1000 + idx + 1,
         roomId: Number(roomId),
-        message: mine ? "좋아요, 감사합니다!" : "디저트 추천 부탁해요!",
+        message: messages[idx % messages.length],
         senderNickname: mine ? "게스트" : "카페메이트",
         timeLabel: formatTime(createdAt),
         mine,
@@ -328,6 +338,50 @@ export const demoSendMessage = (roomId: string, content: string) => {
   write(map);
   emitChanged();
   return message;
+};
+
+export const demoSendImage = (roomId: string, files: File[], caption?: string) => {
+  const map = read();
+  const list = ensureRoomMessages(roomId);
+  const room = readRooms().find((r) => String(r.roomId) === String(roomId));
+  const now = nowIso();
+  const maxId = list.reduce(
+    (acc, cur) => Math.max(acc, cur.chatId || 0),
+    Number(roomId) * 1000
+  );
+  const images = files.map((file, idx) => ({
+    imageId: maxId + idx + 1,
+    originalFileName: file.name,
+    imageUrl: URL.createObjectURL(file),
+  }));
+  const message: ChatHistoryMessage = {
+    chatId: maxId + 1,
+    roomId: Number(roomId),
+    message: caption || "",
+    senderNickname: "게스트",
+    timeLabel: formatTime(now),
+    mine: true,
+    messageType: "IMAGE",
+    createdAt: now,
+    othersUnreadUsers: Math.max((room?.memberCount || 2) - 1, 0),
+    images,
+  };
+  map[roomId] = [...list, message].slice(-300);
+  write(map);
+  emitChanged();
+  return {
+    message: "ok",
+    chatId: message.chatId,
+    roomId: message.roomId,
+    senderId: "guest-user",
+    content: message.message,
+    createdAt: message.createdAt,
+    timeLabel: message.timeLabel,
+    senderNickname: message.senderNickname,
+    messageType: message.messageType,
+    othersUnreadUsers: message.othersUnreadUsers,
+    images: message.images,
+  };
 };
 
 export const demoGetMyChatRooms = (): MyChatRoomsResponse => {

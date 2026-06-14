@@ -12,6 +12,7 @@ import {
   demoToggleMute,
   demoReadLatest,
   demoLeaveRoom,
+  demoGetMyChatRooms,
 } from "@/lib/mockChatApi";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -326,7 +327,21 @@ export const getChatParticipants = async (
 export const getUnreadNotifications = async (): Promise<
   NotificationResponse[]
 > => {
-  if (DEMO_MODE) return [];
+  if (DEMO_MODE) {
+    const rooms = demoGetMyChatRooms().data.content;
+    return rooms
+      .filter((room) => room.unreadCount > 0)
+      .map((room) => ({
+        notificationId: `demo-room-${room.roomId}`,
+        roomId: String(room.roomId),
+        chatId: 0,
+        title: room.displayName,
+        preview: room.lastMessage,
+        deeplink: `/mypage/chats?room=${room.roomId}`,
+        read: false,
+        createdAt: room.lastMessageAt,
+      }));
+  }
   try {
     const token = useAuthStore.getState().accessToken;
 

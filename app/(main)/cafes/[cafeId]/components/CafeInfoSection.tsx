@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { CafeDetail } from "@/data/cafeDetails";
 import Button from "@/components/common/Button";
-import { getWishlistCategories } from "@/lib/api";
+import { getWishlistCategories, sanitizeWishlistCategories } from "@/lib/api";
 import WishlistModal from "@/components/modals/WishlistModal";
 import LoginPromptModal from "@/components/modals/LoginPromptModal";
 import { useAuth } from "@/contexts/AuthContext";
@@ -124,9 +124,11 @@ export default function CafeInfoSection({
     try {
       setWishlistLoading(true);
       const response = await getWishlistCategories(cafeId);
-      if (response?.data) {
-        setWishlistCategories(response.data);
-      }
+      setWishlistCategories(
+        sanitizeWishlistCategories(
+          Array.isArray(response?.data) ? response.data : []
+        )
+      );
     } catch (error: any) {
       console.error("위시리스트 카테고리 로드 실패:", error);
       // 403 오류인 경우 로그인 유도 모달 표시
@@ -141,17 +143,23 @@ export default function CafeInfoSection({
   };
 
   // 위시리스트 모달 열기 (로그인 상태 확인)
-  const handleWishlistClick = () => {
-    // 로그인하지 않은 상태에서 저장 버튼 클릭 시 즉시 로그인 유도 모달 표시
+  const handleWishlistClick = async () => {
     if (!isAuthenticated) {
       setShowLoginPrompt(true);
       return;
     }
 
-    // 로그인한 상태에서만 위시리스트 모달 열기
-    loadWishlistCategories();
+    await loadWishlistCategories();
     setShowWishlistModal(true);
   };
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setWishlistCategories([]);
+      return;
+    }
+    loadWishlistCategories();
+  }, [cafeId, isAuthenticated]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8">
@@ -449,10 +457,9 @@ export default function CafeInfoSection({
       {/* 위시리스트 모달 */}
       {showWishlistModal && (
         <WishlistModal
-          onClose={() => {
-            setShowWishlistModal(false);
-            loadWishlistCategories(); // 모달 닫을 때 위시리스트 상태 새로고침
-          }}
+          onClose={() => setShowWishlistModal(false)}
+          selectedCategories={wishlistCategories}
+          onCategoriesChange={setWishlistCategories}
           cafeId={cafeId}
           cafeName={cafe.name}
         />
