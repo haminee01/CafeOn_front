@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import apiClient from "@/lib/axios";
-import { mockMyQuestions } from "@/data/mockUserActivity";
+import { getMyQuestionListMock } from "@/lib/mockQnaApi";
 
 // 문의 상태 enum
 export enum QuestionStatus {
@@ -65,17 +65,14 @@ export const useMyQuestions = (params: MyQuestionsParams = {}) => {
 
     try {
       if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
-        const page = fetchParams.page ?? 0;
-        const size = fetchParams.size ?? 10;
-        const keyword = (fetchParams.keyword || "").trim().toLowerCase();
-        const filtered = keyword
-          ? mockMyQuestions.filter((q) => q.title.toLowerCase().includes(keyword))
-          : mockMyQuestions;
-        const start = page * size;
-        const content = filtered.slice(start, start + size) as MyQuestion[];
-        setQuestions(content);
-        setTotalElements(filtered.length);
-        setTotalPages(Math.max(1, Math.ceil(filtered.length / size)));
+        const pageData = getMyQuestionListMock({
+          page: fetchParams.page ?? 0,
+          size: fetchParams.size ?? 10,
+          keyword: fetchParams.keyword,
+        });
+        setQuestions(pageData.content as MyQuestion[]);
+        setTotalElements(pageData.totalElements);
+        setTotalPages(pageData.totalPages);
         return;
       }
       const response = await apiClient.get<MyQuestionsResponse>(

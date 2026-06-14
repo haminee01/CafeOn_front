@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { use, useState } from "react";
 import { useMyQuestionDetail } from "@/hooks/useMyQuestionDetail";
 import { useMyQuestionActions } from "@/hooks/useMyQuestionActions";
+import { useAnswerList } from "@/hooks/useQnA";
 import { useAuth } from "@/contexts/AuthContext";
 import QuestionEditModal from "@/components/qna/QuestionEditModal";
 import { useToastContext } from "@/components/common/ToastProvider";
@@ -29,6 +30,12 @@ export default function QuestionDetailPage({
   const questionId = parseInt(resolvedParams.id);
   const { question, isLoading, error, refetch } =
     useMyQuestionDetail(questionId);
+
+  const {
+    answers,
+    isLoading: answersLoading,
+    error: answersError,
+  } = useAnswerList(question?.status === "ANSWERED" ? questionId : 0);
 
   const {
     updateQuestion,
@@ -295,12 +302,42 @@ export default function QuestionDetailPage({
               <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-3 sm:mb-4">
                 관리자 답변
               </h3>
-              <div className="bg-white p-3 sm:p-4 rounded-md border border-green-200">
-                <div className="text-sm sm:text-base text-gray-700">
-                  {/* 답변 내용이 API 응답에 포함되어 있지 않으므로 추후 추가 필요 */}
-                  답변이 등록되었습니다. (답변 내용은 추후 API에서 제공될 예정)
+              {answersLoading ? (
+                <div className="text-center py-4 text-sm text-gray-500">
+                  답변을 불러오는 중...
                 </div>
-              </div>
+              ) : answersError ? (
+                <div className="text-center py-4 text-sm text-red-500">
+                  답변을 불러오는데 실패했습니다.
+                </div>
+              ) : answers.length > 0 ? (
+                <div className="space-y-4">
+                  {answers.map((answer) => (
+                    <div
+                      key={answer.answerId}
+                      className="bg-white p-3 sm:p-4 rounded-md border border-green-200"
+                    >
+                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-4 text-xs sm:text-sm text-gray-500 mb-3 pb-3 border-b border-green-100">
+                        <span>
+                          <span className="font-medium">답변자:</span>{" "}
+                          {answer.adminNickname || "CafeOn 고객센터"}
+                        </span>
+                        <span>
+                          <span className="font-medium">답변일:</span>{" "}
+                          {formatDateTime(answer.createdAt)}
+                        </span>
+                      </div>
+                      <div className="whitespace-pre-wrap text-sm sm:text-base text-gray-700 leading-relaxed">
+                        {answer.content}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white p-3 sm:p-4 rounded-md border border-green-200 text-sm sm:text-base text-gray-500">
+                  답변 준비 중입니다. 잠시 후 다시 확인해 주세요.
+                </div>
+              )}
             </div>
           )}
         </div>
